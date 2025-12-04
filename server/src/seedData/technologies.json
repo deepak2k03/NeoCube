@@ -1,0 +1,734 @@
+[
+  {
+    "name": "React.js",
+    "slug": "reactjs",
+    "shortDescription": "A JavaScript library for building user interfaces with component-based architecture.",
+    "longDescription": "React.js is a powerful JavaScript library developed by Facebook for building dynamic and interactive user interfaces. It uses a virtual DOM for efficient updates, supports reusable components, and has a large ecosystem of tools and libraries.",
+    "category": "Frontend",
+    "difficulty": "Intermediate",
+    "isTrending": true,
+    "tags": ["frontend", "javascript", "spa", "ui", "components"],
+    "estimatedTime": "2-3 months",
+    "prerequisites": ["Basic JavaScript", "HTML", "CSS", "ES6+ Features"],
+    "icon": "⚛️",
+    "color": "#61DAFB",
+    "roadmap": [
+      {
+        "title": "Learn JavaScript Fundamentals",
+        "description": "Master JavaScript basics including variables, functions, arrays, objects, and ES6+ features like arrow functions and destructuring.",
+        "order": 1,
+        "estimatedHours": 40,
+        "resources": [
+          {
+            "type": "course",
+            "title": "JavaScript Complete Guide",
+            "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide",
+            "duration": "30 hours"
+          },
+          {
+            "type": "video",
+            "title": "ES6+ Crash Course",
+            "url": "https://www.youtube.com/watch?v=WZQc_i_mIV8",
+            "duration": "2 hours"
+          }
+        ]
+      },
+      {
+        "title": "Understanding React Core Concepts",
+        "description": "Learn JSX syntax, components, props, state, and the component lifecycle. Understand how React renders and updates the DOM.",
+        "order": 2,
+        "estimatedHours": 30,
+        "resources": [
+          {
+            "type": "docs",
+            "title": "React Official Documentation",
+            "url": "https://react.dev/learn",
+            "duration": "20 hours"
+          },
+          {
+            "type": "video",
+            "title": "React Crash Course",
+            "url": "https://www.youtube.com/watch?v=w7ejDZ8o_s8",
+            "duration": "1 hour"
+          }
+        ]
+      },
+      {
+        "title": "React Hooks Deep Dive",
+        "description": "Master useState, useEffect, useContext, and custom hooks. Learn how to manage state and side effects in functional components.",
+        "order": 3,
+        "estimatedHours": 25,
+        "resources": [
+          {
+            "type": "article",
+            "title": "A Complete Guide to useEffect",
+            "url": "https://overreacted.io/a-complete-guide-to-useeffect/",
+            "duration": "2 hours"
+          },
+          {
+            "type": "project",
+            "title": "Build a Todo App with Hooks",
+            "url": "https://reactjs.org/tutorial/tutorial.html",
+            "duration": "5 hours"
+          }
+        ]
+      },
+      {
+        "title": "State Management with Context & Redux",
+        "description": "Learn React Context API for global state management and explore Redux for complex applications.",
+        "order": 4,
+        "estimatedHours": 35,
+        "resources": [
+          {
+            "type": "docs",
+            "title": "Redux Official Tutorial",
+            "url": "https://redux.js.org/tutorials/fundamentals/part-1-overview",
+            "duration": "15 hours"
+          },
+          {
+            "type": "video",
+            "title": "React Context vs Redux",
+            "url": "https://www.youtube.com/watch?v=i865BCkW5A0",
+            "duration": "1 hour"
+          }
+        ]
+      },
+      {
+        "title": "React Router & Navigation",
+        "description": "Implement client-side routing with React Router. Learn about nested routes, route parameters, and navigation guards.",
+        "order": 5,
+        "estimatedHours": 20,
+        "resources": [
+          {
+            "type": "docs",
+            "title": "React Router Documentation",
+            "url": "https://reactrouter.com/en/main",
+            "duration": "10 hours"
+          },
+          {
+            "type": "project",
+            "title": "Build a Multi-page React App",
+            "url": "https://github.com/remix-run/react-router/tree/main/examples",
+            "duration": "10 hours"
+          }
+        ]
+      },
+      {
+        "title": "Advanced React Patterns & Performance",
+        "description": "Learn performance optimization techniques, code splitting, lazy loading, and advanced patterns like HOCs and render props.",
+        "order": 6,
+        "estimatedHours": 30,
+        "resources": [
+          {
+            "type": "article",
+            "title": "React Performance Optimization",
+            "url": "https://kentcdodds.com/blog/react-performance",
+            "duration": "3 hours"
+          },
+          {
+            "type": "video",
+            "title": "Advanced React Patterns",
+            "url": "https://www.youtube.com/watch?v=uk4WHhIasrQ",
+            "duration": "2 hours"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Node.js",
+    "slug": "nodejs",
+    "shortDescription": "JavaScript runtime built on Chrome's V8 JavaScript engine for server-side development.",
+    "longDescription": "Node.js enables JavaScript to run outside the browser, making it perfect for building scalable network applications, APIs, and microservices. It's known for its event-driven, non-blocking I/O model.",
+    "category": "Backend",
+    "difficulty": "Intermediate",
+    "isTrending": true,
+    "tags": ["backend", "javascript", "api", "server", "node"],
+    "estimatedTime": "2-3 months",
+    "prerequisites": ["JavaScript Fundamentals", "Basic understanding of HTTP", "Command line basics"],
+    "icon": "🟢",
+    "color": "#339933",
+    "roadmap": [
+      {
+        "title": "Node.js Fundamentals & Core Modules",
+        "description": "Learn Node.js architecture, event loop, and core modules like fs, path, http, and events.",
+        "order": 1,
+        "estimatedHours": 35,
+        "resources": [
+          {
+            "type": "docs",
+            "title": "Node.js Official Documentation",
+            "url": "https://nodejs.org/en/docs/",
+            "duration": "25 hours"
+          },
+          {
+            "type": "video",
+            "title": "Node.js Crash Course",
+            "url": "https://www.youtube.com/watch?v=TlB_eWDSMt4",
+            "duration": "1.5 hours"
+          }
+        ]
+      },
+      {
+        "title": "Building REST APIs with Express.js",
+        "description": "Learn Express.js framework for building RESTful APIs, middleware, routing, and error handling.",
+        "order": 2,
+        "estimatedHours": 40,
+        "resources": [
+          {
+            "type": "docs",
+            "title": "Express.js Guide",
+            "url": "https://expressjs.com/en/guide/",
+            "duration": "20 hours"
+          },
+          {
+            "type": "project",
+            "title": "Build a REST API",
+            "url": "https://github.com/expressjs/express/tree/master/examples",
+            "duration": "20 hours"
+          }
+        ]
+      },
+      {
+        "title": "Database Integration with MongoDB",
+        "description": "Learn to connect Node.js with MongoDB using Mongoose ODM. Understand schemas, models, and database operations.",
+        "order": 3,
+        "estimatedHours": 30,
+        "resources": [
+          {
+            "type": "docs",
+            "title": "Mongoose Documentation",
+            "url": "https://mongoosejs.com/docs/",
+            "duration": "20 hours"
+          },
+          {
+            "type": "video",
+            "title": "Node.js + MongoDB Tutorial",
+            "url": "https://www.youtube.com/watch?v=VO6K52m2L7E",
+            "duration": "2 hours"
+          }
+        ]
+      },
+      {
+        "title": "Authentication & Security Best Practices",
+        "description": "Implement JWT authentication, password hashing, input validation, and security middleware to protect your applications.",
+        "order": 4,
+        "estimatedHours": 35,
+        "resources": [
+          {
+            "type": "article",
+            "title": "Node.js Security Best Practices",
+            "url": "https://github.com/goldbergyoni/nodebestpractices#-security",
+            "duration": "5 hours"
+          },
+          {
+            "type": "project",
+            "title": "Add Auth to Express API",
+            "url": "https://github.com/auth0/express-jwt",
+            "duration": "30 hours"
+          }
+        ]
+      },
+      {
+        "title": "Testing Node.js Applications",
+        "description": "Learn unit testing with Jest, integration testing with Supertest, and test-driven development practices.",
+        "order": 5,
+        "estimatedHours": 25,
+        "resources": [
+          {
+            "type": "docs",
+            "title": "Jest Testing Framework",
+            "url": "https://jestjs.io/docs/getting-started",
+            "duration": "15 hours"
+          },
+          {
+            "type": "article",
+            "title": "Testing Node.js APIs",
+            "url": "https://www.valentinog.com/blog/testing-express/",
+            "duration": "10 hours"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "MongoDB",
+    "slug": "mongodb",
+    "shortDescription": "A flexible, scalable NoSQL database that stores data in JSON-like documents.",
+    "longDescription": "MongoDB is a document-oriented NoSQL database that provides high performance, high availability, and easy scalability. It's perfect for applications with evolving data requirements and big data workloads.",
+    "category": "Database",
+    "difficulty": "Beginner",
+    "isTrending": true,
+    "tags": ["database", "nosql", "json", "scalability", "storage"],
+    "estimatedTime": "1-2 months",
+    "prerequisites": ["Basic programming concepts", "Understanding of data structures"],
+    "icon": "🍃",
+    "color": "#47A248",
+    "roadmap": [
+      {
+        "title": "MongoDB Fundamentals & Core Concepts",
+        "description": "Learn about NoSQL vs SQL, document structure, collections, and basic CRUD operations with MongoDB Shell.",
+        "order": 1,
+        "estimatedHours": 25,
+        "resources": [
+          {
+            "type": "docs",
+            "title": "MongoDB Manual",
+            "url": "https://docs.mongodb.com/manual/",
+            "duration": "20 hours"
+          },
+          {
+            "type": "video",
+            "title": "MongoDB Crash Course",
+            "url": "https://www.youtube.com/watch?v=pWbMrx5rVBE",
+            "duration": "1 hour"
+          }
+        ]
+      },
+      {
+        "title": "Advanced Querying & Aggregation",
+        "description": "Master complex queries, aggregation pipeline, indexing strategies, and performance optimization techniques.",
+        "order": 2,
+        "estimatedHours": 30,
+        "resources": [
+          {
+            "type": "docs",
+            "title": "MongoDB Aggregation Framework",
+            "url": "https://docs.mongodb.com/manual/aggregation/",
+            "duration": "20 hours"
+          },
+          {
+            "type": "project",
+            "title": "Analytics Pipeline Project",
+            "url": "https://github.com/mongodb/cookbook",
+            "duration": "10 hours"
+          }
+        ]
+      },
+      {
+        "title": "MongoDB with Node.js & Mongoose",
+        "description": "Integrate MongoDB with Node.js applications using Mongoose ODM for schema validation and data modeling.",
+        "order": 3,
+        "estimatedHours": 35,
+        "resources": [
+          {
+            "type": "docs",
+            "title": "Mongoose Guide",
+            "url": "https://mongoosejs.com/docs/guide.html",
+            "duration": "25 hours"
+          },
+          {
+            "type": "project",
+            "title": "Build a Blog API",
+            "url": "https://github.com/mongodb/node-mongodb-native",
+            "duration": "10 hours"
+          }
+        ]
+      },
+      {
+        "title": "Database Design & Schema Modeling",
+        "description": "Learn effective schema design patterns, embedding vs referencing, and data modeling best practices.",
+        "order": 4,
+        "estimatedHours": 25,
+        "resources": [
+          {
+            "type": "article",
+            "title": "MongoDB Schema Design",
+            "url": "https://www.mongodb.com/blog/post/building-with-patterns-a-summary",
+            "duration": "5 hours"
+          },
+          {
+            "type": "course",
+            "title": "MongoDB University Courses",
+            "url": "https://university.mongodb.com/",
+            "duration": "20 hours"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Python",
+    "slug": "python",
+    "shortDescription": "A versatile, high-level programming language known for its simplicity and extensive libraries.",
+    "longDescription": "Python is a powerful, beginner-friendly programming language used in web development, data science, AI/ML, automation, and more. Its clean syntax and vast ecosystem make it one of the most popular languages today.",
+    "category": "Web Development",
+    "difficulty": "Beginner",
+    "isTrending": true,
+    "tags": ["python", "programming", "data-science", "ai", "automation"],
+    "estimatedTime": "2-3 months",
+    "prerequisites": ["Basic computer literacy", "Logical thinking skills"],
+    "icon": "🐍",
+    "color": "#3776AB",
+    "roadmap": [
+      {
+        "title": "Python Basics & Syntax",
+        "description": "Learn Python fundamentals including variables, data types, operators, control flow, and functions.",
+        "order": 1,
+        "estimatedHours": 40,
+        "resources": [
+          {
+            "type": "docs",
+            "title": "Python Official Tutorial",
+            "url": "https://docs.python.org/3/tutorial/",
+            "duration": "30 hours"
+          },
+          {
+            "type": "video",
+            "title": "Python for Beginners",
+            "url": "https://www.youtube.com/watch?v=eWRfhZUzrAc",
+            "duration": "4 hours"
+          }
+        ]
+      },
+      {
+        "title": "Data Structures & Algorithms",
+        "description": "Master lists, tuples, dictionaries, sets, and understand algorithmic thinking and problem-solving.",
+        "order": 2,
+        "estimatedHours": 35,
+        "resources": [
+          {
+            "type": "course",
+            "title": "Data Structures in Python",
+            "url": "https://www.coursera.org/learn/data-structures-optimizing-performance",
+            "duration": "25 hours"
+          },
+          {
+            "type": "project",
+            "title": "Practice Algorithmic Problems",
+            "url": "https://leetcode.com/",
+            "duration": "10 hours"
+          }
+        ]
+      },
+      {
+        "title": "Object-Oriented Programming",
+        "description": "Learn classes, objects, inheritance, polymorphism, and encapsulation in Python.",
+        "order": 3,
+        "estimatedHours": 30,
+        "resources": [
+          {
+            "type": "article",
+            "title": "OOP in Python Guide",
+            "url": "https://realpython.com/python3-object-oriented-programming/",
+            "duration": "10 hours"
+          },
+          {
+            "type": "project",
+            "title": "Build a Banking System",
+            "url": "https://github.com/topics/banking-system",
+            "duration": "20 hours"
+          }
+        ]
+      },
+      {
+        "title": "Python Web Development with Django",
+        "description": "Learn Django framework for building robust web applications, including models, views, templates, and Django REST Framework.",
+        "order": 4,
+        "estimatedHours": 45,
+        "resources": [
+          {
+            "type": "docs",
+            "title": "Django Official Documentation",
+            "url": "https://docs.djangoproject.com/en/stable/",
+            "duration": "30 hours"
+          },
+          {
+            "type": "project",
+            "title": "Build a Blog with Django",
+            "url": "https://docs.djangoproject.com/en/stable/intro/tutorial01/",
+            "duration": "15 hours"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Machine Learning Fundamentals",
+    "slug": "machine-learning-fundamentals",
+    "shortDescription": "Learn the core concepts and algorithms that power artificial intelligence and data science.",
+    "longDescription": "Machine Learning is the foundation of modern AI. This roadmap covers supervised and unsupervised learning, neural networks, and practical applications using popular ML libraries.",
+    "category": "AI/ML",
+    "difficulty": "Advanced",
+    "isTrending": true,
+    "tags": ["ai", "ml", "data-science", "python", "neural-networks"],
+    "estimatedTime": "4-6 months",
+    "prerequisites": ["Python programming", "Statistics basics", "Linear algebra", "Calculus"],
+    "icon": "🤖",
+    "color": "#FF6B6B",
+    "roadmap": [
+      {
+        "title": "Mathematics for Machine Learning",
+        "description": "Master linear algebra, calculus, probability, and statistics - the mathematical foundations of ML.",
+        "order": 1,
+        "estimatedHours": 60,
+        "resources": [
+          {
+            "type": "course",
+            "title": "Mathematics for ML Specialization",
+            "url": "https://www.coursera.org/specializations/mathematics-machine-learning",
+            "duration": "40 hours"
+          },
+          {
+            "type": "book",
+            "title": "Introduction to Linear Algebra",
+            "url": "https://math.mit.edu/~gs/linearalgebra/",
+            "duration": "20 hours"
+          }
+        ]
+      },
+      {
+        "title": "Python for Data Science",
+        "description": "Learn NumPy, Pandas, Matplotlib, and other essential Python libraries for data manipulation and visualization.",
+        "order": 2,
+        "estimatedHours": 50,
+        "resources": [
+          {
+            "type": "course",
+            "title": "Python for Data Science",
+            "url": "https://www.coursera.org/learn/python-data-analysis",
+            "duration": "30 hours"
+          },
+          {
+            "type": "project",
+            "title": "Data Analysis Projects",
+            "url": "https://www.kaggle.com/datasets",
+            "duration": "20 hours"
+          }
+        ]
+      },
+      {
+        "title": "Supervised Learning Algorithms",
+        "description": "Master regression, classification, decision trees, random forests, and support vector machines.",
+        "order": 3,
+        "estimatedHours": 55,
+        "resources": [
+          {
+            "type": "course",
+            "title": "Machine Learning by Andrew Ng",
+            "url": "https://www.coursera.org/learn/machine-learning",
+            "duration": "40 hours"
+          },
+          {
+            "type": "project",
+            "title": "Classification Projects",
+            "url": "https://scikit-learn.org/stable/auto_examples/index.html",
+            "duration": "15 hours"
+          }
+        ]
+      },
+      {
+        "title": "Deep Learning & Neural Networks",
+        "description": "Learn neural networks, backpropagation, CNNs, RNNs, and frameworks like TensorFlow and PyTorch.",
+        "order": 4,
+        "estimatedHours": 70,
+        "resources": [
+          {
+            "type": "course",
+            "title": "Deep Learning Specialization",
+            "url": "https://www.coursera.org/specializations/deep-learning",
+            "duration": "50 hours"
+          },
+          {
+            "type": "project",
+            "title": "Build a Neural Network",
+            "url": "https://www.tensorflow.org/tutorials",
+            "duration": "20 hours"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "DevOps Fundamentals",
+    "slug": "devops-fundamentals",
+    "shortDescription": "Master the practices and tools that bridge development and operations for faster, reliable software delivery.",
+    "longDescription": "DevOps combines software development (Dev) and IT operations (Ops) to shorten the development lifecycle and provide continuous delivery with high software quality.",
+    "category": "DevOps",
+    "difficulty": "Advanced",
+    "isTrending": true,
+    "tags": ["devops", "ci-cd", "docker", "kubernetes", "automation"],
+    "estimatedTime": "3-4 months",
+    "prerequisites": ["Linux basics", "Programming knowledge", "Understanding of web applications"],
+    "icon": "🔧",
+    "color": "#FF9800",
+    "roadmap": [
+      {
+        "title": "Linux & Shell Scripting",
+        "description": "Master Linux commands, file systems, process management, and shell scripting for automation.",
+        "order": 1,
+        "estimatedHours": 40,
+        "resources": [
+          {
+            "type": "course",
+            "title": "Linux Command Line Basics",
+            "url": "https://www.coursera.org/learn/linux-command-line",
+            "duration": "25 hours"
+          },
+          {
+            "type": "project",
+            "title": "Shell Scripting Projects",
+            "url": "https://github.com/topics/shell-script",
+            "duration": "15 hours"
+          }
+        ]
+      },
+      {
+        "title": "Containerization with Docker",
+        "description": "Learn Docker fundamentals, containerization, Dockerfile, Docker Compose, and container orchestration.",
+        "order": 2,
+        "estimatedHours": 45,
+        "resources": [
+          {
+            "type": "docs",
+            "title": "Docker Documentation",
+            "url": "https://docs.docker.com/",
+            "duration": "30 hours"
+          },
+          {
+            "type": "project",
+            "title": "Containerize Applications",
+            "url": "https://github.com/docker/awesome-compose",
+            "duration": "15 hours"
+          }
+        ]
+      },
+      {
+        "title": "CI/CD with Jenkins/GitHub Actions",
+        "description": "Build continuous integration and deployment pipelines using Jenkins, GitHub Actions, and automated testing.",
+        "order": 3,
+        "estimatedHours": 50,
+        "resources": [
+          {
+            "type": "course",
+            "title": "CI/CD with Jenkins",
+            "url": "https://www.jenkins.io/doc/tutorials/",
+            "duration": "30 hours"
+          },
+          {
+            "type": "project",
+            "title": "Setup CI/CD Pipeline",
+            "url": "https://github.com/features/actions",
+            "duration": "20 hours"
+          }
+        ]
+      },
+      {
+        "title": "Infrastructure as Code with Terraform",
+        "description": "Learn to manage infrastructure using Terraform, cloud providers, and infrastructure automation.",
+        "order": 4,
+        "estimatedHours": 45,
+        "resources": [
+          {
+            "type": "docs",
+            "title": "Terraform Documentation",
+            "url": "https://developer.hashicorp.com/terraform/docs",
+            "duration": "35 hours"
+          },
+          {
+            "type": "project",
+            "title": "Deploy Infrastructure",
+            "url": "https://github.com/terraform-providers",
+            "duration": "10 hours"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "React Native",
+    "slug": "react-native",
+    "shortDescription": "Build mobile applications for iOS and Android using React and JavaScript.",
+    "longDescription": "React Native enables you to create truly native mobile apps using JavaScript and React. It provides a single codebase that works on both iOS and Android platforms while maintaining native performance and user experience.",
+    "category": "Mobile",
+    "difficulty": "Intermediate",
+    "isTrending": true,
+    "tags": ["mobile", "react", "ios", "android", "javascript"],
+    "estimatedTime": "3-4 months",
+    "prerequisites": ["React.js knowledge", "JavaScript fundamentals", "Basic mobile app concepts"],
+    "icon": "📱",
+    "color": "#61DAFB",
+    "roadmap": [
+      {
+        "title": "React Native Setup & Core Concepts",
+        "description": "Learn React Native setup, components, styling, and the differences from React web development.",
+        "order": 1,
+        "estimatedHours": 35,
+        "resources": [
+          {
+            "type": "docs",
+            "title": "React Native Official Docs",
+            "url": "https://reactnative.dev/docs/getting-started",
+            "duration": "25 hours"
+          },
+          {
+            "type": "video",
+            "title": "React Native Crash Course",
+            "url": "https://www.youtube.com/watch?v=0-S5a0eXPoc",
+            "duration": "2 hours"
+          }
+        ]
+      },
+      {
+        "title": "Navigation & Routing",
+        "description": "Master React Navigation for mobile app navigation, including stack, tab, and drawer navigators.",
+        "order": 2,
+        "estimatedHours": 30,
+        "resources": [
+          {
+            "type": "docs",
+            "title": "React Navigation",
+            "url": "https://reactnavigation.org/",
+            "duration": "20 hours"
+          },
+          {
+            "type": "project",
+            "title": "Build a Multi-screen App",
+            "url": "https://reactnavigation.org/docs/getting-started",
+            "duration": "10 hours"
+          }
+        ]
+      },
+      {
+        "title": "Native Features & APIs",
+        "description": "Learn to access device features like camera, GPS, storage, and native APIs using React Native modules.",
+        "order": 3,
+        "estimatedHours": 40,
+        "resources": [
+          {
+            "type": "course",
+            "title": "React Native Advanced Topics",
+            "url": "https://www.udemy.com/course/react-native-the-practical-guide/",
+            "duration": "30 hours"
+          },
+          {
+            "type": "project",
+            "title": "Camera App Project",
+            "url": "https://reactnative.dev/docs/camera",
+            "duration": "10 hours"
+          }
+        ]
+      },
+      {
+        "title": "State Management & Performance",
+        "description": "Implement state management with Redux or Context API, and learn performance optimization techniques.",
+        "order": 4,
+        "estimatedHours": 35,
+        "resources": [
+          {
+            "type": "article",
+            "title": "React Native Performance",
+            "url": "https://reactnative.dev/docs/performance",
+            "duration": "15 hours"
+          },
+          {
+            "type": "project",
+            "title": "Optimize App Performance",
+            "url": "https://github.com/facebook/react-native/issues",
+            "duration": "20 hours"
+          }
+        ]
+      }
+    ]
+  }
+]
