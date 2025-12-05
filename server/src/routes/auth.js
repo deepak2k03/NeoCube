@@ -1,30 +1,17 @@
 const express = require('express');
 const { validationRules, handleValidationErrors } = require('../utils/validators');
-// ❌ remove authLimiter import for now
-// const { authLimiter } = require('../middleware/rateLimiter');
+const { authLimiter } = require('../middleware/rateLimiter');
 const authController = require('../controllers/authController');
 const { authenticate } = require('../middleware/auth');
 
 const router = express.Router();
 
-// ❌ no rate limiting on auth routes during development / testing
+// ❌ TEMP: remove authLimiter for auth routes completely
 // if (process.env.NODE_ENV === 'production') {
 //   router.use(authLimiter);
 // }
 
-// @route   POST /api/v1/auth/register
-// @desc    Register a new user
-// @access  Public
-router.post(
-  '/register',
-  validationRules.register,
-  handleValidationErrors,
-  authController.register
-);
-
-// @route   POST /api/v1/auth/login
-// @desc    Login user
-// @access  Public
+// ✅ LOGIN – keep as is
 router.post(
   '/login',
   validationRules.login,
@@ -32,9 +19,10 @@ router.post(
   authController.login
 );
 
-// @route   GET /api/v1/auth/me
-// @desc    Get current user
-// @access  Private
+// ✅ ME – keep as is
 router.get('/me', authenticate, authController.getMe);
+
+// ✅ REGISTER – TEMP: remove validators, call controller directly
+router.post('/register', authController.register);
 
 module.exports = router;
