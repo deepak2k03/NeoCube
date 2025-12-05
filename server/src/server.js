@@ -21,6 +21,9 @@ connectDB();
 
 const app = express();
 
+// ✅ Trust Render's proxy so express-rate-limit can use X-Forwarded-For safely
+app.set('trust proxy', 1);
+
 // Security middleware
 app.use(helmet());
 
@@ -39,11 +42,10 @@ if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
 }
 
-// Apply rate limiting
+// Apply rate limiting (only in production)
 if (process.env.NODE_ENV === 'production') {
   app.use(generalLimiter);
 }
-
 
 // Health check endpoint
 app.get('/health', (req, res) => {
@@ -80,14 +82,12 @@ const server = app.listen(PORT, () => {
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (err, promise) => {
   console.log(`Error: ${err.message}`);
-  // Close server & exit process
   server.close(() => process.exit(1));
 });
 
 // Handle uncaught exceptions
 process.on('uncaughtException', (err) => {
   console.log(`Error: ${err.message}`);
-  // Close server & exit process
   server.close(() => process.exit(1));
 });
 
