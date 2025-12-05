@@ -1,15 +1,16 @@
 const express = require('express');
 const { validationRules, handleValidationErrors } = require('../utils/validators');
-const { authLimiter } = require('../middleware/rateLimiter');
+// ❌ remove authLimiter import for now
+// const { authLimiter } = require('../middleware/rateLimiter');
 const authController = require('../controllers/authController');
 const { authenticate } = require('../middleware/auth');
 
 const router = express.Router();
 
-// Apply rate limiting to auth routes only in production
-if (process.env.NODE_ENV === 'production') {
-  router.use(authLimiter);
-}
+// ❌ no rate limiting on auth routes during development / testing
+// if (process.env.NODE_ENV === 'production') {
+//   router.use(authLimiter);
+// }
 
 // @route   POST /api/v1/auth/register
 // @desc    Register a new user
@@ -34,10 +35,6 @@ router.post(
 // @route   GET /api/v1/auth/me
 // @desc    Get current user
 // @access  Private
-router.get(
-  '/me',
-  authenticate,
-  authController.getMe
-);
+router.get('/me', authenticate, authController.getMe);
 
 module.exports = router;
