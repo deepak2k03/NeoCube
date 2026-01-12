@@ -53,7 +53,7 @@ const getIconForCategory = (cat) => {
 const seedDB = async () => {
   try {
     // Connect to DB
-    await mongoose.connect("mongodb+srv://deepak2k03:Deepak2003@cluster0.h80fnzq.mongodb.net/NeoCube?appName=Cluster0");
+    await mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true });
     console.log('✅ Connected to MongoDB...');
 
     // 1. Clear existing data
