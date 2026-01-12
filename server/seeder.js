@@ -6,7 +6,7 @@ const path = require('path');
 dotenv.config({ path: path.join(__dirname, '.env') });
 
 // Debug Check
-console.log("Checking Mongo URI:", "mongodb+srv://deepak2k03:Deepak2003@cluster0.h80fnzq.mongodb.net/NeoCube?appName=Cluster0" ? "Found" : "MISSING (Check .env file!)");
+
 
 // 2. IMPORT MODEL (Fixes path based on your screenshots)
 const Technology = require('./src/models/Technology'); 
