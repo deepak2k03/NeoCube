@@ -3,18 +3,20 @@ import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import {
-  Sun,
-  Moon,
-  Menu,
-  X,
-  Home,
-  BookOpen,
-  User,
-  Heart,
-  LogOut,
-  TrendingUp,
+  Sun, Moon, Menu, X, Home, BookOpen,
+  User, Heart, LogOut, TrendingUp, Zap
 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Layers } from 'lucide-react'; // Import Layers icon
 
+// Inside Layout component:
+const navItems = [
+  { name: 'Dashboard', href: '/dashboard', icon: Home },
+  { name: 'Sectors', href: '/fields', icon: Layers }, // CHANGED from 'Technologies'
+  { name: 'Trending', href: '/trending', icon: TrendingUp }, 
+  { name: 'Favourites', href: '/favourites', icon: Heart },
+  { name: 'Profile', href: '/profile', icon: User },
+];
 const Layout = ({ children }) => {
   const { user, logout } = useAuth();
   const { toggleTheme, isDarkMode } = useTheme();
@@ -22,65 +24,47 @@ const Layout = ({ children }) => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Navigation items
+  // 1. FIXED NAV ITEMS (Pointing to real routes)
   const navItems = [
     { name: 'Dashboard', href: '/dashboard', icon: Home },
     { name: 'Technologies', href: '/technologies', icon: BookOpen },
-    { name: 'Trending', href: '/technologies?isTrending=true', icon: TrendingUp },
+    { name: 'Trending', href: '/trending', icon: TrendingUp }, // FIXED LINK
     { name: 'Favourites', href: '/favourites', icon: Heart },
     { name: 'Profile', href: '/profile', icon: User },
   ];
 
-  // Check if current route matches nav item
+  // 2. SIMPLIFIED ACTIVE CHECK (No query params needed now)
   const isActiveRoute = (href) => {
-  // Build a URL object so we can read path + query separately
-  const url = new URL(href, window.location.origin);
+    return location.pathname === href;
+  };
 
-  const samePath = location.pathname === url.pathname;
-
-  // If paths are different, it's not active
-  if (!samePath) return false;
-
-  // If the nav item has a query string (like ?isTrending=true),
-  // then it should be active ONLY when the full search matches.
-  if (url.search) {
-    return location.search === url.search;
-  }
-
-  // If the nav item has NO query (like /technologies),
-  // treat it as the base route and ensure we are NOT on the trending filter.
-  return !location.search.includes('isTrending=true');
-};
-
-
-  // Handle logout
   const handleLogout = () => {
     logout();
     navigate('/');
   };
 
-  // Don't show navigation for landing and auth pages
   const shouldShowNavigation = !['/', '/login', '/signup'].includes(location.pathname);
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
-      {/* Navigation */}
+    <div className="min-h-screen bg-background transition-colors duration-200">
+      
       {shouldShowNavigation && (
-        <nav className="sticky top-0 z-50 border-b border-gray-200/40 dark:border-gray-800/60 bg-white/80 dark:bg-gray-950/80 backdrop-blur-xl">
-          <div className="container-custom">
-            <div className="flex items-center justify-between h-16">
-              {/* Logo */}
-              <Link to="/dashboard" className="flex items-center space-x-2 group">
-                <div className="w-9 h-9 bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl flex items-center justify-center shadow-md shadow-primary-500/30 group-hover:scale-105 transition-transform">
-                  <BookOpen className="w-5 h-5 text-white" />
+        <nav className="sticky top-0 z-50 border-b border-white/5 bg-background/80 backdrop-blur-xl">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-between h-20">
+              
+              {/* Logo Area */}
+              <Link to="/dashboard" className="flex items-center space-x-3 group">
+                <div className="w-10 h-10 bg-gradient-to-br from-primary to-primary-dark rounded-xl flex items-center justify-center shadow-[0_0_15px_rgba(59,130,246,0.4)] group-hover:scale-105 transition-transform duration-300">
+                  <Zap className="w-5 h-5 text-white fill-current" />
                 </div>
-                <span className="text-xl font-bold text-gray-900 dark:text-white tracking-tight">
-                  NeoCube
+                <span className="text-2xl font-display font-bold text-white tracking-tight">
+                  Neo<span className="text-primary">Cube</span>
                 </span>
               </Link>
 
               {/* Desktop Navigation */}
-              <div className="hidden md:flex items-center space-x-1">
+              <div className="hidden md:flex items-center bg-white/5 rounded-2xl p-1.5 border border-white/5">
                 {navItems.map((item) => {
                   const Icon = item.icon;
                   const isActive = isActiveRoute(item.href);
@@ -89,154 +73,112 @@ const Layout = ({ children }) => {
                     <Link
                       key={item.name}
                       to={item.href}
-                      className={[
-                        'relative inline-flex items-center px-3 py-2 text-sm font-medium rounded-2xl transition-all duration-200',
-                        'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/70 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent',
-                        isActive
-                          ? 'bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-sm shadow-primary-500/30'
-                          : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100/80 dark:hover:bg-gray-800/80',
-                      ].join(' ')}
+                      className="relative px-5 py-2.5 rounded-xl transition-all duration-300 group"
                     >
-                      <span
-                        className={[
-                          'flex items-center justify-center w-7 h-7 rounded-xl mr-2 transition-all duration-200',
-                          isActive
-                            ? 'bg-white/20'
-                            : 'bg-gray-100 dark:bg-gray-800 group-hover:bg-gray-200 dark:group-hover:bg-gray-700',
-                        ].join(' ')}
-                      >
-                        <Icon className="w-4 h-4" />
-                      </span>
-                      <span>{item.name}</span>
                       {isActive && (
-                        <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-8 h-0.5 rounded-full bg-white/80 dark:bg-primary-300/90" />
+                        <motion.div
+                          layoutId="nav-pill"
+                          className="absolute inset-0 bg-primary/20 rounded-xl border border-primary/30"
+                          transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                        />
                       )}
+                      
+                      <div className="relative z-10 flex items-center space-x-2">
+                        <Icon className={`w-4 h-4 transition-colors ${isActive ? 'text-white' : 'text-textMuted group-hover:text-white'}`} />
+                        <span className={`text-sm font-medium transition-colors ${isActive ? 'text-white' : 'text-textMuted group-hover:text-white'}`}>
+                          {item.name}
+                        </span>
+                      </div>
                     </Link>
                   );
                 })}
               </div>
 
-              {/* Right side actions */}
-              <div className="flex items-center space-x-3">
-                {/* Theme toggle */}
+              {/* Right Side Actions */}
+              <div className="flex items-center space-x-4">
+                {/* User Profile Pill */}
+                <div className="hidden md:flex items-center space-x-3 bg-surface border border-white/5 px-3 py-1.5 rounded-full hover:border-white/20 transition-colors">
+                  <div 
+                    className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-lg"
+                    style={{ backgroundColor: user?.avatar?.color || '#3b82f6' }}
+                  >
+                    {user?.name?.charAt(0).toUpperCase() || 'U'}
+                  </div>
+                  <span className="text-sm font-medium text-gray-300 pr-2">
+                    {user?.name || 'Operative'}
+                  </span>
+                </div>
+                
                 <button
-                  onClick={toggleTheme}
-                  className="p-2 rounded-xl text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                  aria-label="Toggle theme"
+                  onClick={handleLogout}
+                  className="hidden md:flex p-2.5 rounded-xl text-textMuted hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                  title="Disconnect"
                 >
-                  {isDarkMode ? (
-                    <Sun className="w-5 h-5" />
-                  ) : (
-                    <Moon className="w-5 h-5" />
-                  )}
+                  <LogOut className="w-5 h-5" />
                 </button>
 
-                {/* User menu (desktop) */}
-                <div className="hidden md:flex items-center space-x-3">
-                  <div className="flex items-center space-x-2">
-                    <div className="w-9 h-9 bg-gradient-to-br from-primary-500 to-primary-600 rounded-full flex items-center justify-center text-white text-sm font-semibold shadow-sm shadow-primary-500/40">
-                      {user?.name?.charAt(0).toUpperCase() || 'U'}
-                    </div>
-                    <span className="text-sm font-medium text-gray-700 dark:text-gray-200 max-w-[140px] truncate">
-                      {user?.name || 'User'}
-                    </span>
-                  </div>
-                  <button
-                    onClick={handleLogout}
-                    className="p-2 rounded-xl text-gray-500 hover:text-danger-600 dark:text-gray-400 dark:hover:text-danger-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                    aria-label="Logout"
-                  >
-                    <LogOut className="w-4 h-4" />
-                  </button>
-                </div>
-
-                {/* Mobile menu button */}
+                {/* Mobile Menu Toggle */}
                 <button
                   onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                  className="md:hidden p-2 rounded-xl text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                  aria-label="Toggle menu"
+                  className="md:hidden p-2 rounded-xl text-textMuted hover:text-white hover:bg-white/10"
                 >
-                  {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+                  {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
                 </button>
               </div>
             </div>
 
-            {/* Mobile Navigation */}
-            {isMobileMenuOpen && (
-              <div className="md:hidden py-3 border-t border-gray-200/60 dark:border-gray-800/80">
-                <div className="space-y-2">
-                  {navItems.map((item) => {
-                    const Icon = item.icon;
-                    const isActive = isActiveRoute(item.href);
-                    return (
-                      <Link
-                        key={item.name}
-                        to={item.href}
-                        onClick={() => setIsMobileMenuOpen(false)}
-                        className={[
-                          'flex items-center px-3 py-2 rounded-2xl text-sm font-medium transition-all duration-200',
-                          isActive
-                            ? 'bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-sm shadow-primary-500/30'
-                            : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800',
-                        ].join(' ')}
-                      >
-                        <span
-                          className={[
-                            'flex items-center justify-center w-8 h-8 rounded-xl mr-3',
-                            isActive
-                              ? 'bg-white/20'
-                              : 'bg-gray-100 dark:bg-gray-800',
-                          ].join(' ')}
+            {/* Mobile Menu Dropdown */}
+            <AnimatePresence>
+              {isMobileMenuOpen && (
+                <motion.div 
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  className="md:hidden overflow-hidden border-t border-white/5 bg-background"
+                >
+                  <div className="py-4 space-y-2">
+                    {navItems.map((item) => {
+                      const Icon = item.icon;
+                      const isActive = isActiveRoute(item.href);
+                      return (
+                        <Link
+                          key={item.name}
+                          to={item.href}
+                          onClick={() => setIsMobileMenuOpen(false)}
+                          className={`
+                            flex items-center px-4 py-3 mx-2 rounded-xl text-sm font-medium transition-all
+                            ${isActive 
+                              ? 'bg-primary/20 text-white border border-primary/30' 
+                              : 'text-textMuted hover:bg-white/5 hover:text-white'}
+                          `}
                         >
-                          <Icon className="w-4 h-4" />
-                        </span>
-                        <span>{item.name}</span>
-                      </Link>
-                    );
-                  })}
-                </div>
-
-                {/* Mobile user section */}
-                <div className="mt-4 pt-3 border-t border-gray-200/60 dark:border-gray-800/80">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <div className="w-9 h-9 bg-gradient-to-br from-primary-500 to-primary-600 rounded-full flex items-center justify-center text-white text-sm font-semibold">
-                        {user?.name?.charAt(0).toUpperCase() || 'U'}
-                      </div>
-                      <span className="text-sm font-medium text-gray-700 dark:text-gray-200 max-w-[150px] truncate">
-                        {user?.name || 'User'}
-                      </span>
-                    </div>
+                          <Icon className={`w-5 h-5 mr-3 ${isActive ? 'text-primary' : ''}`} />
+                          {item.name}
+                        </Link>
+                      );
+                    })}
                     <button
                       onClick={handleLogout}
-                      className="p-2 rounded-xl text-gray-500 hover:text-danger-600 dark:text-gray-400 dark:hover:text-danger-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                      aria-label="Logout"
+                      className="w-full flex items-center px-4 py-3 mx-2 rounded-xl text-sm font-medium text-red-400 hover:bg-red-500/10 transition-all"
                     >
-                      <LogOut className="w-4 h-4" />
+                      <LogOut className="w-5 h-5 mr-3" />
+                      Disconnect Session
                     </button>
                   </div>
-                </div>
-              </div>
-            )}
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </nav>
       )}
 
-      {/* Main content */}
-      <main className="flex-1">
-        {children || <Outlet />}
+      {/* Main Content Area */}
+      <main className="relative z-0">
+        <Outlet /> 
+        {/* Or {children} if you prefer, but Outlet is standard for Layout wrappers */}
+        {children}
       </main>
 
-      {/* Footer (only for non-auth pages) */}
-      {!shouldShowNavigation && (
-        <footer className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 py-8">
-          <div className="container-custom">
-            <div className="text-center text-gray-500 dark:text-gray-400 text-sm">
-              <p>&copy; 2024 Tech Learning Hub. Built with ❤️ for learners.</p>
-            </div>
-          </div>
-        </footer>
-      )}
     </div>
   );
 };

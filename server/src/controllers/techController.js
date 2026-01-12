@@ -1,211 +1,85 @@
 const Technology = require('../models/Technology');
 const User = require('../models/User');
-const Analytics = require('../models/Analytics');
+const { GoogleGenerativeAI } = require("@google/generative-ai");
 
-// @desc    Get all technologies with filtering
-// @route   GET /api/v1/technologies
-// @access  Public
-const getTechnologies = async (req, res) => {
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
+
+// 1. Get all technologies for the dashboard
+exports.getTechnologies = async (req, res) => {
   try {
-    const {
-      page = 1,
-      limit = 12,
-      search,
-      category,
-      difficulty,
-      tags,
-      isTrending,
-      sort = 'name'
-    } = req.query;
-
-    // Build filters
-    const filters = {};
-    if (category) filters.category = category;
-    if (difficulty) filters.difficulty = difficulty;
-    if (tags) filters.tags = tags.split(',').map(tag => tag.trim());
-    if (isTrending !== undefined) filters.isTrending = isTrending === 'true';
-
-    // Build query
-    let query = Technology.search(search, filters);
-
-    // Sorting
-    const sortOptions = {
-      name: { name: 1 },
-      popularity: { popularity: -1 },
-      createdAt: { createdAt: -1 },
-      difficulty: { difficulty: 1 }
-    };
-    query = query.sort(sortOptions[sort] || sortOptions.name);
-
-    // Pagination
-    const pageNum = parseInt(page);
-    const limitNum = parseInt(limit);
-    const skip = (pageNum - 1) * limitNum;
-
-    const technologies = await query
-      .skip(skip)
-      .limit(limitNum)
-      .select('name slug shortDescription category difficulty isTrending tags estimatedTime icon color popularity');
-
-    const total = await Technology.countDocuments(search ? Technology.search(search, filters).getQuery() : {});
-
-    res.status(200).json({
-      success: true,
-      data: {
-        technologies,
-        pagination: {
-          page: pageNum,
-          limit: limitNum,
-          total,
-          pages: Math.ceil(total / limitNum),
-          hasNext: pageNum * limitNum < total,
-          hasPrev: pageNum > 1
-        }
-      }
-    });
+    const technologies = await Technology.find().select('-roadmap');
+    res.status(200).json({ success: true, data: { technologies } }); 
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
-// @desc    Get trending technologies
-// @route   GET /api/v1/technologies/trending
-// @access  Public
-const getTrendingTechnologies = async (req, res) => {
-  try {
-    const { limit = 6 } = req.query;
-
-    const technologies = await Technology.findTrending(parseInt(limit));
-
-    res.status(200).json({
-      success: true,
-      data: {
-        technologies
-      }
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
-  }
-};
-
-// @desc    Get single technology by slug
-// @route   GET /api/v1/technologies/:slug
-// @access  Public
-const getTechnologyBySlug = async (req, res) => {
+// 2. Get tech by slug (Database-First Strategy)
+exports.getTechnologyBySlug = async (req, res) => {
   try {
     const { slug } = req.params;
+    let tech = await Technology.findOne({ slug });
 
-    const technology = await Technology.findOne({ slug })
-      .populate({
-        path: 'roadmap',
-        options: { sort: { order: 1 } }
-      });
+    if (!tech) return res.status(404).json({ success: false, message: 'Not found' });
 
-    if (!technology) {
-      return res.status(404).json({
-        success: false,
-        message: 'Technology not found'
-      });
+    // CACHE CHECK: If roadmap exists in DB, return it immediately
+    if (tech.roadmap && tech.roadmap.length > 0) {
+      return res.status(200).json({ success: true, data: { technology: tech } });
     }
 
-    let userProgress = null;
+    // AI GENERATION: Only if DB is empty
+    const prompt = `Generate a learning roadmap for ${tech.name}. Return ONLY JSON: {"description": "...", "roadmap": [{"title": "...", "description": "...", "duration": "...", "resources": [{"title": "...", "url": "...", "type": "video/article/documentation/course"}]}]}`;
+    const result = await model.generateContent(prompt);
+    const aiData = JSON.parse(result.response.text().replace(/```json|```/g, "").trim());
 
-    // If user is authenticated, get their progress
-    if (req.user) {
-      const user = await User.findById(req.user._id);
-      const progressEntry = user.progress.find(
-        p => p.technology.toString() === technology._id.toString()
-      );
-
-      if (progressEntry) {
-        userProgress = {
-          technology: technology._id,
-          completedSteps: progressEntry.completedSteps,
-          totalSteps: technology.roadmap.length,
-          percentage: Math.round((progressEntry.completedSteps.length / technology.roadmap.length) * 100),
-          startDate: progressEntry.startDate,
-          lastUpdated: progressEntry.lastUpdated,
-          completedDate: progressEntry.completedDate
-        };
-      }
-    }
-
-    // Record analytics if user is authenticated
-    if (req.user) {
-      await Analytics.recordAction(req.user._id, technology._id, 'view', {
-        userAgent: req.get('User-Agent'),
-        ipAddress: req.ip
-      });
-    }
-
-    res.status(200).json({
-      success: true,
-      data: {
-        technology,
-        userProgress,
-        isFavourite: req.user && req.user.favourites.includes(technology._id)
-      }
-    });
+    tech.roadmap = aiData.roadmap;
+    if (aiData.description) tech.description = aiData.description;
+    
+    await tech.save();
+    res.status(200).json({ success: true, data: { technology: tech } });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
+    res.status(500).json({ success: false, message: "AI generation failed" });
   }
 };
 
-// @desc    Get technology categories
-// @route   GET /api/v1/technologies/categories
-// @access  Public
-const getCategories = async (req, res) => {
+// 3. Update Progress and Learning Notes
+exports.updateProgress = async (req, res) => {
   try {
-    const categories = await Technology.distinct('category');
+    const { slug } = req.params;
+    const { stepIndex, status, notes } = req.body;
 
-    res.status(200).json({
-      success: true,
-      data: {
-        categories: categories.sort()
-      }
-    });
+    const tech = await Technology.findOne({ slug });
+    const user = await User.findById(req.user._id);
+
+    // FIX: Check if technology exists before proceeding
+    if (!tech) return res.status(404).json({ success: false, message: 'Tech not found' });
+
+    let techProgress = user.progress.find(p => p.technology.toString() === tech._id.toString());
+    
+    if (!techProgress) {
+      techProgress = { technology: tech._id, steps: [] };
+      // FIX: Must push to the progress array, not the user object
+      user.progress.push(techProgress); 
+    }
+
+    const stepIdx = techProgress.steps.findIndex(s => s.stepIndex === stepIndex);
+    if (stepIdx >= 0) {
+      // Update existing step data
+      if (status) techProgress.steps[stepIdx].status = status;
+      if (notes !== undefined) techProgress.steps[stepIdx].notes = notes;
+    } else {
+      // Add new step entry
+      techProgress.steps.push({ stepIndex, status: status || 'pending', notes: notes || '' });
+    }
+
+    // MANDATORY: Tell Mongoose the nested 'progress' array changed
+    user.markModified('progress'); 
+    await user.save();
+
+    res.status(200).json({ success: true, data: techProgress });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
+    console.error("Cloud Sync Error:", error);
+    res.status(500).json({ success: false, message: "Cloud sync failed" });
   }
-};
-
-// @desc    Get all technology tags
-// @route   GET /api/v1/technologies/tags
-// @access  Public
-const getTags = async (req, res) => {
-  try {
-    const tags = await Technology.distinct('tags');
-
-    res.status(200).json({
-      success: true,
-      data: {
-        tags: tags.sort()
-      }
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
-  }
-};
-
-module.exports = {
-  getTechnologies,
-  getTrendingTechnologies,
-  getTechnologyBySlug,
-  getCategories,
-  getTags
 };

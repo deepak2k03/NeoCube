@@ -1,17 +1,14 @@
 const express = require('express');
 const { validationRules, handleValidationErrors } = require('../utils/validators');
-const { authLimiter } = require('../middleware/rateLimiter');
+// const { authLimiter } = require('../middleware/rateLimiter'); // Commented out as per your file
 const authController = require('../controllers/authController');
-const { authenticate } = require('../middleware/auth');
+
+// 👇 FIX: Import 'protect' instead of 'authenticate'
+const { protect } = require('../middleware/authMiddleware'); 
 
 const router = express.Router();
 
-// ❌ TEMP: remove authLimiter for auth routes completely
-// if (process.env.NODE_ENV === 'production') {
-//   router.use(authLimiter);
-// }
-
-// ✅ LOGIN – keep as is
+// ✅ LOGIN 
 router.post(
   '/login',
   validationRules.login,
@@ -19,10 +16,10 @@ router.post(
   authController.login
 );
 
-// ✅ ME – keep as is
-router.get('/me', authenticate, authController.getMe);
+// ✅ ME (Use 'protect' here to match the import)
+router.get('/me', protect, authController.getMe);
 
-// ✅ REGISTER – TEMP: remove validators, call controller directly
+// ✅ REGISTER 
 router.post('/register', authController.register);
 
 module.exports = router;

@@ -1,452 +1,333 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { motion } from 'framer-motion';
 import {
-  BookOpen,
-  Trophy,
-  Target,
-  TrendingUp,
-  Flame,
-  Clock,
-  Zap,
-  Award,
-  Play,
+  BookOpen, Trophy, Target, TrendingUp, Flame,
+  Clock, Zap, Award, Play, ChevronRight, Star,
+  Activity, Calendar, ArrowUpRight
 } from 'lucide-react';
-import StatsCard from '../components/common/StatsCard';
-import Card, { CardHeader, CardTitle, CardContent } from '../components/common/Card';
-import ProgressRing from '../components/common/ProgressRing';
-import Button from '../components/common/Button';
 
 const Dashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  // Safely derive stats from logged-in user
+  // Safely derive stats
   const userStats = user?.stats || {};
   const streak = user?.streak ?? userStats.streak ?? 0;
 
-  const mockStats = [
-    {
-      title: 'Technologies Learning',
-      value: String(userStats.inProgressTechnologies ?? 3),
-      icon: BookOpen,
-      color: 'primary',
-      trend: 'up',
-      trendValue: '+1 this week',
-      description: 'Active learning paths',
-    },
-    {
-      title: 'Completed Steps',
-      value: String(userStats.completedSteps ?? 24),
-      icon: Target,
-      color: 'success',
-      trend: 'up',
-      trendValue: '+8 this week',
-      description: 'Total steps completed',
-    },
-    {
-      title: 'Learning Streak',
-      value: `${streak} day${streak === 1 ? '' : 's'}`,
-      icon: Trophy,
-      color: 'warning',
-      trend: 'up',
-      trendValue: streak > 0 ? 'Keep it going!' : 'Start your first streak',
-      description: 'Consecutive learning days',
-    },
-    {
-      title: 'Progress',
-      value: `${userStats.overallProgress ?? 68}%`,
-      icon: TrendingUp,
-      color: 'primary',
-      trend: 'up',
-      trendValue: '+5% this week',
-      description: 'Overall completion',
-    },
-  ];
+  // Animation Variants
+  const container = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: { staggerChildren: 0.1 }
+    }
+  };
+
+  const item = {
+    hidden: { opacity: 0, y: 20 },
+    show: { opacity: 1, y: 0 }
+  };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-gray-900 dark:via-blue-900/20 dark:to-indigo-900/20">
-      <div className="container-custom py-8">
-        {/* Enhanced Header */}
-        <div className="mb-8 animate-fade-in">
-          <div className="flex items-center justify-between gap-4">
+    <div className="min-h-screen bg-background relative overflow-x-hidden pt-28 pb-20 px-6">
+      
+      {/* 1. ATMOSPHERIC BACKGROUND */}
+      <div className="fixed inset-0 pointer-events-none">
+        <div className="absolute top-[-20%] left-[20%] w-[600px] h-[600px] bg-primary/10 rounded-full blur-[120px] animate-pulse-slow" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-purple-500/10 rounded-full blur-[120px]" />
+        <div className="absolute inset-0 bg-grid opacity-20" />
+      </div>
+
+      <div className="max-w-7xl mx-auto relative z-10">
+        
+        {/* 2. HEADER SECTION */}
+        <motion.div 
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          className="flex flex-col md:flex-row items-end justify-between gap-6 mb-12"
+        >
+          <div>
+            <div className="flex items-center gap-2 text-primary mb-2 font-mono text-xs tracking-widest uppercase">
+              <Activity className="w-4 h-4" /> System Overview
+            </div>
+            <h1 className="text-4xl md:text-5xl font-display font-bold text-white">
+              Welcome back, <span className="text-gradient-primary">{user?.name || 'Operative'}</span>
+            </h1>
+            <p className="text-textMuted mt-2 max-w-xl">
+              Your learning neural network is active. Systems nominal.
+            </p>
+          </div>
+
+          {/* Streak Badge (Floating) */}
+          <motion.div 
+            whileHover={{ scale: 1.05 }}
+            className="group relative px-6 py-3 bg-surface/80 backdrop-blur-xl border border-white/10 rounded-2xl flex items-center gap-4 shadow-lg hover:border-orange-500/50 transition-colors"
+          >
+            <div className="absolute inset-0 bg-orange-500/5 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity" />
+            <div className="p-2 bg-orange-500/10 rounded-lg text-orange-500">
+              <Flame className={`w-6 h-6 ${streak > 0 ? 'animate-pulse' : ''}`} />
+            </div>
             <div>
-              <div className="flex items-center gap-3 mb-2">
-                <div className="p-3 gradient-primary rounded-2xl shadow-lg">
-                  <Trophy className="w-6 h-6 text-white" />
-                </div>
-                <h1 className="text-4xl md:text-5xl font-display font-bold text-gray-900 dark:text-white">
-                  Welcome back,{' '}
-                  <span className="text-gradient">{user?.name || 'Learner'}</span>! 🚀
-                </h1>
-              </div>
-              <p className="text-xl text-gray-600 dark:text-gray-400">
-                Your learning journey continues. Here&apos;s what&apos;s happening today.
-              </p>
+              <div className="text-2xl font-bold text-white leading-none">{streak}</div>
+              <div className="text-[10px] text-orange-400 font-mono uppercase tracking-wider">Day Streak</div>
             </div>
+          </motion.div>
+        </motion.div>
 
-            {/* Streak badge - now dynamic */}
-            <div className="hidden md:flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-orange-500 to-red-500">
-              <Flame className="w-5 h-5 text-white animate-pulse" />
-              {streak > 0 ? (
-                <span className="text-white font-bold">
-                  {streak} Day{streak === 1 ? '' : 's'} Streak!
-                </span>
-              ) : (
-                <span className="text-white font-semibold">Start your streak today</span>
-              )}
-            </div>
-          </div>
-        </div>
+        {/* 3. STATS HUD */}
+        <motion.div 
+          variants={container}
+          initial="hidden"
+          animate="show"
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-12"
+        >
+          <StatCard 
+            title="Active Modules" 
+            value={String(userStats.inProgressTechnologies ?? 3)} 
+            icon={BookOpen} 
+            color="text-blue-400" 
+            trend="+1 New"
+          />
+          <StatCard 
+            title="Nodes Cleared" 
+            value={String(userStats.completedSteps ?? 24)} 
+            icon={Target} 
+            color="text-green-400" 
+            trend="+8 This Week"
+          />
+          <StatCard 
+            title="Sync Streak" 
+            value={`${streak} Days`} 
+            icon={Trophy} 
+            color="text-yellow-400" 
+            trend="Record High"
+          />
+          <StatCard 
+            title="Overall Sync" 
+            value={`${userStats.overallProgress ?? 68}%`} 
+            icon={TrendingUp} 
+            color="text-purple-400" 
+            trend="+5% Gain"
+          />
+        </motion.div>
 
-        {/* Enhanced Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {mockStats.map((stat, index) => (
-            <div
-              key={index}
-              className="relative group animate-fade-in"
-              style={{ animationDelay: `${index * 100}ms` }}
-            >
-              <StatsCard {...stat} />
-              <div className="absolute inset-0 bg-gradient-to-br from-blue-500 to-purple-500 opacity-0 group-hover:opacity-5 rounded-2xl transition-opacity duration-300" />
-            </div>
-          ))}
-        </div>
-
-        {/* Enhanced Main Content */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Continue Learning Section */}
-          <div className="lg:col-span-2 space-y-6">
-            <Card className="animate-fade-in" style={{ animationDelay: '400ms' }}>
-              <CardHeader className="flex items-center justify-between">
-                <CardTitle className="flex items-center gap-2">
-                  <Play className="w-5 h-5 text-blue-500" />
-                  Continue Learning
-                </CardTitle>
-                <Button
-                  size="sm"
-                  variant="outline"
+        {/* 4. MAIN DASHBOARD GRID */}
+        <div className="grid lg:grid-cols-3 gap-8">
+          
+          {/* LEFT COLUMN: ACTIVE LEARNING (2/3 width) */}
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="lg:col-span-2 space-y-8"
+          >
+            {/* Continue Learning Section */}
+            <div className="glass-card p-6 border-l-4 border-l-primary">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                  <Play className="w-5 h-5 text-primary" /> Active Protocols
+                </h2>
+                <button 
                   onClick={() => navigate('/technologies')}
+                  className="text-xs font-mono text-primary hover:text-white transition-colors"
                 >
-                  View All
-                </Button>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-6">
-                  {/* Progress Card 1 - React */}
-                  <div className="group relative p-6 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-2xl border border-blue-200 dark:border-blue-800 hover:shadow-xl transition-all duration-300 hover:scale-[1.02]">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex items-center gap-4">
-                        <div className="p-3 bg-white dark:bg-gray-800 rounded-xl shadow-md">
-                          <div className="text-3xl">⚛️</div>
-                        </div>
-                        <div>
-                          <h3 className="text-lg font-bold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                            React.js
-                          </h3>
-                          <p className="text-sm text-gray-600 dark:text-gray-400">
-                            Frontend • Intermediate
-                          </p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                          68%
-                        </div>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">Complete</p>
-                      </div>
-                    </div>
+                  VIEW ALL &gt;
+                </button>
+              </div>
 
-                    {/* Enhanced Progress Bar */}
-                    <div className="mb-4">
-                      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 overflow-hidden">
-                        <div
-                          className="gradient-primary h-3 rounded-full transition-all duration-700 ease-out"
-                          style={{ width: '68%' }}
-                        >
-                          <div className="h-full bg-white/20 animate-pulse" />
-                        </div>
-                      </div>
-                    </div>
+              <div className="space-y-4">
+                <CourseProgress 
+                  title="React.js" 
+                  subtitle="Frontend • Intermediate" 
+                  progress={68} 
+                  icon="⚛️" 
+                  color="bg-blue-500"
+                  onClick={() => navigate('/technologies/reactjs')}
+                />
+                <CourseProgress 
+                  title="Node.js" 
+                  subtitle="Backend • Intermediate" 
+                  progress={45} 
+                  icon="🟢" 
+                  color="bg-green-500"
+                  onClick={() => navigate('/technologies/nodejs')}
+                />
+                <CourseProgress 
+                  title="MongoDB" 
+                  subtitle="Database • Beginner" 
+                  progress={30} 
+                  icon="🍃" 
+                  color="bg-emerald-500"
+                  onClick={() => navigate('/technologies/mongodb')}
+                />
+              </div>
+            </div>
 
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
-                        Next: React Hooks Deep Dive
-                      </p>
-                      <Button
-                        size="sm"
-                        className="group-hover:scale-105 transition-transform"
-                        onClick={() => navigate('/technologies/reactjs')}
-                      >
-                        Continue
-                      </Button>
-                    </div>
+            {/* Weekly Activity Graph (Visual Mock) */}
+            <div className="glass-card p-6">
+              <div className="flex items-center gap-2 mb-6">
+                <Activity className="w-5 h-5 text-yellow-500" />
+                <h2 className="text-xl font-bold text-white">Activity Log</h2>
+              </div>
+              <div className="flex items-end justify-between h-32 gap-2">
+                {[40, 70, 35, 90, 60, 80, 50].map((h, i) => (
+                  <div key={i} className="w-full bg-white/5 rounded-t-lg relative group hover:bg-primary/20 transition-colors">
+                    <motion.div 
+                      initial={{ height: 0 }}
+                      animate={{ height: `${h}%` }}
+                      transition={{ duration: 1, delay: i * 0.1 }}
+                      className="absolute bottom-0 w-full bg-gradient-to-t from-primary/10 to-primary rounded-t-lg"
+                    />
                   </div>
+                ))}
+              </div>
+              <div className="flex justify-between mt-2 text-xs font-mono text-gray-500 uppercase">
+                <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
+              </div>
+            </div>
+          </motion.div>
 
-                  {/* Progress Card 2 - Node.js */}
-                  <div className="group relative p-6 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-2xl border border-green-200 dark:border-green-800 hover:shadow-xl transition-all duration-300 hover:scale-[1.02]">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex items-center gap-4">
-                        <div className="p-3 bg-white dark:bg-gray-800 rounded-xl shadow-md">
-                          <div className="text-3xl">🟢</div>
-                        </div>
-                        <div>
-                          <h3 className="text-lg font-bold text-gray-900 dark:text-white group-hover:text-green-600 dark:group-hover:text-green-400 transition-colors">
-                            Node.js
-                          </h3>
-                          <p className="text-sm text-gray-600 dark:text-gray-400">
-                            Backend • Intermediate
-                          </p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-2xl font-bold text-green-600 dark:text-green-400">
-                          45%
-                        </div>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">Complete</p>
-                      </div>
-                    </div>
+          {/* RIGHT COLUMN: SIDEBAR (1/3 width) */}
+          <motion.div 
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.4 }}
+            className="space-y-6"
+          >
+            {/* Recommended */}
+            <div className="glass-card p-6">
+              <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                <Star className="w-4 h-4 text-purple-400" /> Suggested Ops
+              </h3>
+              <div className="space-y-3">
+                <RecommendedItem 
+                  icon="🐍" 
+                  name="Python" 
+                  match="98%" 
+                  tag="Data Science"
+                />
+                <RecommendedItem 
+                  icon="🐳" 
+                  name="Docker" 
+                  match="92%" 
+                  tag="DevOps"
+                />
+                <RecommendedItem 
+                  icon="🧠" 
+                  name="Neural Nets" 
+                  match="88%" 
+                  tag="AI/ML"
+                />
+              </div>
+            </div>
 
-                    <div className="mb-4">
-                      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 overflow-hidden">
-                        <div
-                          className="gradient-success h-3 rounded-full transition-all duration-700 ease-out"
-                          style={{ width: '45%' }}
-                        >
-                          <div className="h-full bg-white/20 animate-pulse" />
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
-                        Next: Building REST APIs with Express.js
-                      </p>
-                      <Button
-                        size="sm"
-                        className="group-hover:scale-105 transition-transform"
-                        onClick={() => navigate('/technologies/nodejs')}
-                      >
-                        Continue
-                      </Button>
-                    </div>
+            {/* Achievements */}
+            <div className="glass-card p-6 relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-yellow-500/10 rounded-full blur-2xl" />
+              <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2 relative z-10">
+                <Trophy className="w-4 h-4 text-yellow-400" /> Recent Awards
+              </h3>
+              <div className="space-y-4 relative z-10">
+                <div className="flex gap-3 items-center p-3 rounded-xl bg-white/5 border border-white/5">
+                  <div className="p-2 rounded-lg bg-yellow-500/20 text-yellow-500">
+                    <Flame className="w-4 h-4" />
                   </div>
-
-                  {/* Progress Card 3 - MongoDB */}
-                  <div className="group relative p-6 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-2xl border border-purple-200 dark:border-purple-800 hover:shadow-xl transition-all duration-300 hover:scale-[1.02]">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex items-center gap-4">
-                        <div className="p-3 bg-white dark:bg-gray-800 rounded-xl shadow-md">
-                          <div className="text-3xl">🍃</div>
-                        </div>
-                        <div>
-                          <h3 className="text-lg font-bold text-gray-900 dark:text-white group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
-                            MongoDB
-                          </h3>
-                          <p className="text-sm text-gray-600 dark:text-gray-400">
-                            Database • Beginner
-                          </p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
-                          30%
-                        </div>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">Complete</p>
-                      </div>
-                    </div>
-
-                    <div className="mb-4">
-                      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 overflow-hidden">
-                        <div
-                          className="gradient-secondary h-3 rounded-full transition-all duration-700 ease-out"
-                          style={{ width: '30%' }}
-                        >
-                          <div className="h-full bg-white/20 animate-pulse" />
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
-                        Next: Advanced Querying & Aggregation
-                      </p>
-                      <Button
-                        size="sm"
-                        className="group-hover:scale-105 transition-transform"
-                        onClick={() => navigate('/technologies/mongodb')}
-                      >
-                        Continue
-                      </Button>
-                    </div>
+                  <div>
+                    <div className="text-sm font-bold text-white">Ignition</div>
+                    <div className="text-[10px] text-gray-400">7 Day Streak</div>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-
-            {/* Quick Stats Card */}
-            <Card className="animate-fade-in" style={{ animationDelay: '500ms' }}>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Zap className="w-5 h-5 text-yellow-500" />
-                  This Week&apos;s Activity
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="text-center p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl">
-                    <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">12</div>
-                    <div className="text-sm text-gray-600 dark:text-gray-400">
-                      Steps Completed
-                    </div>
+                <div className="flex gap-3 items-center p-3 rounded-xl bg-white/5 border border-white/5">
+                  <div className="p-2 rounded-lg bg-blue-500/20 text-blue-500">
+                    <Zap className="w-4 h-4" />
                   </div>
-                  <div className="text-center p-4 bg-green-50 dark:bg-green-900/20 rounded-xl">
-                    <div className="text-3xl font-bold text-green-600 dark:text-green-400">
-                      8.5
-                    </div>
-                    <div className="text-sm text-gray-600 dark:text-gray-400">
-                      Hours Learned
-                    </div>
-                  </div>
-                  <div className="text-center p-4 bg-purple-50 dark:bg-purple-900/20 rounded-xl">
-                    <div className="text-3xl font-bold text-purple-600 dark:text-purple-400">
-                      3
-                    </div>
-                    <div className="text-sm text-gray-600 dark:text-gray-400">New Skills</div>
-                  </div>
-                  <div className="text-center p-4 bg-orange-50 dark:bg-orange-900/20 rounded-xl">
-                    <div className="text-3xl font-bold text-orange-600 dark:text-orange-400">
-                      95%
-                    </div>
-                    <div className="text-sm text-gray-600 dark:text-gray-400">
-                      Consistency
-                    </div>
+                  <div>
+                    <div className="text-sm font-bold text-white">Fast Learner</div>
+                    <div className="text-[10px] text-gray-400">Top 10% Speed</div>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          </div>
+              </div>
+            </div>
 
-          {/* Recommendations Section */}
-          <div className="space-y-6">
-            <Card className="animate-fade-in" style={{ animationDelay: '600ms' }}>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Award className="w-5 h-5 text-purple-500" />
-                  Recommended for You
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {[
-                    {
-                      icon: '🐍',
-                      name: 'Python',
-                      description: 'Beginner • 2-3 months',
-                      reason: 'Perfect for data science',
-                      match: '95%',
-                    },
-                    {
-                      icon: '🤖',
-                      name: 'Machine Learning',
-                      description: 'Advanced • 4-6 months',
-                      reason: 'Based on your interests',
-                      match: '88%',
-                    },
-                    {
-                      icon: '📱',
-                      name: 'React Native',
-                      description: 'Intermediate • 3-4 months',
-                      reason: 'Builds on React.js',
-                      match: '92%',
-                    },
-                  ].map((tech, index) => (
-                    <div
-                      key={index}
-                      className="group p-4 border border-gray-200 dark:border-gray-700 rounded-2xl hover:border-blue-300 dark:hover:border-blue-600 hover:shadow-md hover:scale-[1.02] transition-all duration-300 cursor-pointer"
-                    >
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-3">
-                          <div className="text-2xl group-hover:scale-110 transition-transform">
-                            {tech.icon}
-                          </div>
-                          <div>
-                            <h3 className="font-bold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                              {tech.name}
-                            </h3>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">
-                              {tech.description}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-sm font-bold text-green-600 dark:text-green-400">
-                            {tech.match}
-                          </div>
-                          <div className="text-xs text-gray-500 dark:text-gray-400">
-                            Match
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                        <span className="inline-flex items-center px-2 py-1 bg-blue-50 dark:bg-blue-900/20 rounded-full text-xs font-medium text-blue-700 dark:text-blue-300">
-                          {tech.reason}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Achievement Card */}
-            <Card className="animate-fade-in" style={{ animationDelay: '700ms' }}>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Trophy className="w-5 h-5 text-yellow-500" />
-                  Recent Achievements
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 rounded-xl">
-                    <div className="w-10 h-10 bg-gradient-to-br from-yellow-400 to-orange-400 rounded-full flex items-center justify-center">
-                      <Flame className="w-5 h-5 text-white" />
-                    </div>
-                    <div>
-                      <h4 className="font-bold text-gray-900 dark:text-white">
-                        {streak > 0
-                          ? `${streak} Day${streak === 1 ? '' : 's'} Streak!`
-                          : 'Start your streak!'}
-                      </h4>
-                      <p className="text-xs text-gray-600 dark:text-gray-400">
-                        {streak > 0
-                          ? 'Keep the momentum going'
-                          : 'Learn a little today to begin your streak'}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-xl">
-                    <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-purple-400 rounded-full flex items-center justify-center">
-                      <Target className="w-5 h-5 text-white" />
-                    </div>
-                    <div>
-                      <h4 className="font-bold text-gray-900 dark:text-white">
-                        React Hook Master
-                      </h4>
-                      <p className="text-xs text-gray-600 dark:text-gray-400">
-                        Completed all hook exercises
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+          </motion.div>
         </div>
+
       </div>
     </div>
   );
 };
+
+// --- SUB-COMPONENTS (Clean & Reusable) ---
+
+const StatCard = ({ title, value, icon: Icon, color, trend }) => (
+  <motion.div 
+    variants={{
+      hidden: { opacity: 0, y: 20 },
+      show: { opacity: 1, y: 0 }
+    }}
+    whileHover={{ y: -5 }}
+    className="glass-card p-5 border border-white/10 hover:border-white/20 transition-all"
+  >
+    <div className="flex justify-between items-start mb-4">
+      <div className={`p-2 rounded-lg bg-white/5 ${color}`}>
+        <Icon className="w-5 h-5" />
+      </div>
+      <span className="text-[10px] font-mono text-gray-500 bg-black/20 px-2 py-1 rounded border border-white/5">
+        {trend}
+      </span>
+    </div>
+    <div className="text-2xl font-bold text-white mb-1">{value}</div>
+    <div className="text-xs text-textMuted uppercase tracking-wider">{title}</div>
+  </motion.div>
+);
+
+const CourseProgress = ({ title, subtitle, progress, icon, color, onClick }) => (
+  <div 
+    onClick={onClick}
+    className="group p-4 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 hover:border-primary/30 transition-all cursor-pointer"
+  >
+    <div className="flex justify-between items-start mb-3">
+      <div className="flex items-center gap-4">
+        <div className="w-10 h-10 rounded-lg bg-surfaceHighlight flex items-center justify-center text-xl shadow-lg border border-white/5 group-hover:scale-110 transition-transform">
+          {icon}
+        </div>
+        <div>
+          <h4 className="text-white font-bold group-hover:text-primary transition-colors">{title}</h4>
+          <p className="text-xs text-gray-400">{subtitle}</p>
+        </div>
+      </div>
+      <div className="text-right">
+        <span className="text-lg font-bold text-white">{progress}%</span>
+      </div>
+    </div>
+    <div className="w-full bg-black/40 rounded-full h-1.5 overflow-hidden">
+      <motion.div 
+        initial={{ width: 0 }}
+        whileInView={{ width: `${progress}%` }}
+        transition={{ duration: 1, ease: "easeOut" }}
+        className={`h-full ${color} shadow-[0_0_10px_rgba(255,255,255,0.3)]`}
+      />
+    </div>
+  </div>
+);
+
+const RecommendedItem = ({ icon, name, match, tag }) => (
+  <div className="flex items-center justify-between p-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 transition-colors cursor-pointer group">
+    <div className="flex items-center gap-3">
+      <div className="w-8 h-8 rounded bg-surfaceHighlight flex items-center justify-center border border-white/5 group-hover:scale-110 transition-transform">
+        {icon}
+      </div>
+      <div>
+        <div className="text-sm font-bold text-white group-hover:text-primary transition-colors">{name}</div>
+        <div className="text-[10px] text-gray-500">{tag}</div>
+      </div>
+    </div>
+    <div className="text-xs font-mono text-green-400 bg-green-500/10 px-2 py-1 rounded border border-green-500/20">
+      {match} Match
+    </div>
+  </div>
+);
 
 export default Dashboard;

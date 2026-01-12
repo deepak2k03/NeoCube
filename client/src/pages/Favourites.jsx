@@ -1,265 +1,260 @@
-import React from 'react';
-import { Heart, Search } from 'lucide-react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Card, { CardHeader, CardTitle, CardContent } from '../components/common/Card';
-import Button from '../components/common/Button';
-import { TechCardSkeleton } from '../components/common/LoadingSkeleton';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  Heart, Search, Zap, ChevronRight, 
+  Code2, Database, Cpu, Trash2, PlayCircle 
+} from 'lucide-react';
+
+// --- MOCK DATA (Logic Preserved) ---
+const mockFavourites = [
+  {
+    _id: '1',
+    name: 'React.js',
+    slug: 'reactjs',
+    shortDescription: 'A JavaScript library for building user interfaces.',
+    category: 'Frontend',
+    difficulty: 'Intermediate',
+    isTrending: true,
+    tags: ['frontend', 'javascript', 'ui'],
+    estimatedTime: '2-3 months',
+    icon: <Code2 className="w-8 h-8" />,
+    color: '#61DAFB',
+    progress: {
+      completedSteps: 4,
+      totalSteps: 6,
+      percentage: 68,
+      lastUpdated: '2 days ago',
+    },
+  },
+  {
+    _id: '3',
+    name: 'MongoDB',
+    slug: 'mongodb',
+    shortDescription: 'A flexible, scalable NoSQL database.',
+    category: 'Database',
+    difficulty: 'Beginner',
+    isTrending: true,
+    tags: ['database', 'nosql', 'json'],
+    estimatedTime: '1-2 months',
+    icon: <Database className="w-8 h-8" />,
+    color: '#47A248',
+    progress: {
+      completedSteps: 1,
+      totalSteps: 4,
+      percentage: 25,
+      lastUpdated: '1 week ago',
+    },
+  },
+  {
+    _id: '5',
+    name: 'Machine Learning',
+    slug: 'machine-learning-fundamentals',
+    shortDescription: 'Core concepts powering AI and Data Science.',
+    category: 'AI/ML',
+    difficulty: 'Advanced',
+    isTrending: true,
+    tags: ['ai', 'ml', 'python'],
+    estimatedTime: '4-6 months',
+    icon: <Cpu className="w-8 h-8" />,
+    color: '#FF6B6B',
+    progress: null,
+  },
+];
 
 const Favourites = () => {
-  const [isLoading, setIsLoading] = React.useState(false);
-  const [searchQuery, setSearchQuery] = React.useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   const navigate = useNavigate();
 
-  // Mock favourites data - in a real app, this would be fetched from API
-  const mockFavourites = [
-    {
-      _id: '1',
-      name: 'React.js',
-      slug: 'reactjs',
-      shortDescription:
-        'A JavaScript library for building user interfaces with component-based architecture.',
-      category: 'Frontend',
-      difficulty: 'Intermediate',
-      isTrending: true,
-      tags: ['frontend', 'javascript', 'spa', 'ui', 'components'],
-      estimatedTime: '2-3 months',
-      icon: '⚛️',
-      color: '#61DAFB',
-      progress: {
-        completedSteps: 4,
-        totalSteps: 6,
-        percentage: 68,
-        lastUpdated: '2 days ago',
-      },
-    },
-    {
-      _id: '3',
-      name: 'MongoDB',
-      slug: 'mongodb',
-      shortDescription:
-        'A flexible, scalable NoSQL database that stores data in JSON-like documents.',
-      category: 'Database',
-      difficulty: 'Beginner',
-      isTrending: true,
-      tags: ['database', 'nosql', 'json', 'scalability', 'storage'],
-      estimatedTime: '1-2 months',
-      icon: '🍃',
-      color: '#47A248',
-      progress: {
-        completedSteps: 1,
-        totalSteps: 4,
-        percentage: 25,
-        lastUpdated: '1 week ago',
-      },
-    },
-    {
-      _id: '5',
-      name: 'Machine Learning Fundamentals',
-      slug: 'machine-learning-fundamentals',
-      shortDescription:
-        'Learn the core concepts and algorithms that power artificial intelligence and data science.',
-      category: 'AI/ML',
-      difficulty: 'Advanced',
-      isTrending: true,
-      tags: ['ai', 'ml', 'data-science', 'python', 'neural-networks'],
-      estimatedTime: '4-6 months',
-      icon: '🤖',
-      color: '#FF6B6B',
-      progress: null,
-    },
-  ];
-
+  // Filter Logic
   const filteredFavourites = mockFavourites.filter(
     (tech) =>
       tech.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       tech.shortDescription.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      tech.tags.some((tag) =>
-        tag.toLowerCase().includes(searchQuery.toLowerCase())
-      )
+      tech.tags.some((tag) => tag.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
-  const goToTechnology = (slug) => {
-    navigate(`/technologies/${slug}`);
-  };
-
   return (
-    <div className="container-custom py-8">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2 flex items-center">
-          <Heart className="w-8 h-8 mr-3 text-red-500 fill-current" />
-          My Favourites
-        </h1>
-        <p className="text-gray-600 dark:text-gray-400">
-          Technologies you've saved for quick access and future learning.
-        </p>
+    <div className="min-h-screen bg-background relative overflow-x-hidden pt-28 pb-20 px-6">
+      
+      {/* 1. CINEMATIC BACKGROUND */}
+      <div className="fixed inset-0 pointer-events-none">
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/10 rounded-full blur-[120px] animate-pulse-slow" />
+        <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-red-500/5 rounded-full blur-[120px]" />
+        <div className="absolute inset-0 bg-grid opacity-20" />
       </div>
 
-      {/* Search Bar */}
-      <Card className="mb-8">
-        <CardContent>
-          <div className="relative max-w-md">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-            <input
-              type="text"
-              placeholder="Search your favourite technologies..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="input pl-10"
-            />
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Favourites Grid */}
-      {isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {Array.from({ length: 6 }).map((_, index) => (
-            <TechCardSkeleton key={index} />
-          ))}
-        </div>
-      ) : filteredFavourites.length === 0 ? (
-        <Card className="text-center py-12">
-          <CardContent>
-            <Heart className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-              {searchQuery ? 'No matching favourites found' : 'No favourites yet'}
-            </h3>
-            <p className="text-gray-600 dark:text-gray-400 mb-6">
-              {searchQuery
-                ? 'Try adjusting your search terms or browse all technologies to find more to favourite.'
-                : 'Start exploring technologies and add them to your favourites for quick access.'}
+      <div className="max-w-7xl mx-auto relative z-10">
+        
+        {/* 2. HEADER SECTION */}
+        <div className="flex flex-col md:flex-row items-end justify-between gap-8 mb-12">
+          <motion.div 
+            initial={{ opacity: 0, x: -20 }} 
+            animate={{ opacity: 1, x: 0 }}
+          >
+            <div className="flex items-center gap-3 text-red-400 mb-2 font-mono text-sm tracking-widest uppercase">
+              <Heart className="w-4 h-4 fill-current animate-pulse" />
+              <span>Saved Protocols</span>
+            </div>
+            <h1 className="text-4xl md:text-5xl font-display font-bold text-white">
+              My <span className="text-gradient-primary">Arsenal</span>
+            </h1>
+            <p className="text-textMuted mt-2 max-w-xl">
+              Quick access to your active learning paths and saved technologies.
             </p>
-            <Button onClick={() => navigate('/technologies')}>
-              Explore Technologies
-            </Button>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredFavourites.map((tech) => (
-            <Card key={tech._id} hover className="group">
-              <CardContent>
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-center space-x-3">
-                    <div className="text-3xl">{tech.icon}</div>
-                    <div>
-                      <h3
-                        className="font-semibold text-gray-900 dark:text-white group-hover:text-primary-600 transition-colors cursor-pointer"
-                        onClick={() => goToTechnology(tech.slug)}
-                      >
-                        {tech.name}
-                      </h3>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
-                        {tech.category}
-                      </p>
-                    </div>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
-                  >
-                    <Heart className="w-4 h-4 fill-current" />
-                  </Button>
-                </div>
+          </motion.div>
 
-                <p className="text-gray-600 dark:text-gray-400 mb-4 line-clamp-2">
-                  {tech.shortDescription}
-                </p>
-
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center space-x-2">
-                    <span
-                      className={`
-                      badge badge-secondary
-                      ${tech.difficulty === 'Beginner' ? 'badge-success' : ''}
-                      ${tech.difficulty === 'Intermediate' ? 'badge-warning' : ''}
-                      ${tech.difficulty === 'Advanced' ? 'badge-danger' : ''}
-                    `}
-                    >
-                      {tech.difficulty}
-                    </span>
-                    <span className="text-sm text-gray-500 dark:text-gray-400">
-                      {tech.estimatedTime}
-                    </span>
-                  </div>
-                  {tech.isTrending && (
-                    <span className="badge badge-warning">Trending</span>
-                  )}
-                </div>
-
-                {/* Progress Section */}
-                {tech.progress ? (
-                  <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg mb-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Progress
-                      </span>
-                      <span className="text-sm text-gray-500 dark:text-gray-400">
-                        {tech.progress.percentage}%
-                      </span>
-                    </div>
-                    <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2">
-                      <div
-                        className="bg-primary-500 h-2 rounded-full"
-                        style={{ width: `${tech.progress.percentage}%` }}
-                      />
-                    </div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                      Last updated {tech.progress.lastUpdated}
-                    </p>
-                  </div>
-                ) : (
-                  <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg mb-4 text-center">
-                    <p className="text-sm text-blue-700 dark:text-blue-300">
-                      Not started yet
-                    </p>
-                  </div>
-                )}
-
-                {/* Action Buttons */}
-                <div className="flex space-x-2">
-                  <Button
-                    size="sm"
-                    variant="primary"
-                    className="flex-1"
-                    onClick={() => goToTechnology(tech.slug)}
-                  >
-                    {tech.progress ? 'Continue Learning' : 'Start Learning'}
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => goToTechnology(tech.slug)}
-                  >
-                    View Details
-                  </Button>
-                </div>
-
-                {/* Tags */}
-                <div className="mt-4 flex flex-wrap gap-1">
-                  {tech.tags.slice(0, 3).map((tag) => (
-                    <span
-                      key={tag}
-                      className="inline-block px-2 py-1 text-xs rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400"
-                    >
-                      {tag}
-                    </span>
-                  ))}
-                  {tech.tags.length > 3 && (
-                    <span className="inline-block px-2 py-1 text-xs rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400">
-                      +{tech.tags.length - 3}
-                    </span>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+          {/* Search Bar */}
+          <motion.div 
+            initial={{ opacity: 0, x: 20 }} 
+            animate={{ opacity: 1, x: 0 }}
+            className="w-full md:w-96"
+          >
+            <div className="relative group">
+              <div className="absolute -inset-0.5 bg-gradient-to-r from-red-500/20 to-primary/20 rounded-xl blur opacity-50 group-hover:opacity-100 transition duration-500"></div>
+              <div className="relative flex items-center bg-surface/90 backdrop-blur-xl border border-white/10 rounded-lg p-1">
+                <Search className="w-5 h-5 text-textMuted ml-3" />
+                <input
+                  type="text"
+                  placeholder="Filter saved items..."
+                  className="w-full bg-transparent border-none text-white placeholder-textMuted px-4 py-3 focus:ring-0 focus:outline-none"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+            </div>
+          </motion.div>
         </div>
-      )}
+
+        {/* 3. FAVOURITES GRID */}
+        {filteredFavourites.length === 0 ? (
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex flex-col items-center justify-center py-24 border border-dashed border-white/10 rounded-3xl bg-surface/30 backdrop-blur-sm"
+          >
+            <div className="w-20 h-20 bg-surfaceHighlight rounded-full flex items-center justify-center mb-6 shadow-glow">
+              <Heart className="w-10 h-10 text-textMuted opacity-50" />
+            </div>
+            <h3 className="text-xl font-bold text-white mb-2">
+              {searchQuery ? 'No matching protocols found' : 'System Empty'}
+            </h3>
+            <p className="text-textMuted mb-8 max-w-md text-center">
+              {searchQuery 
+                ? 'Adjust your search parameters to locate saved items.' 
+                : 'Your arsenal is empty. Visit the Discovery Engine to add new technologies.'}
+            </p>
+            <button 
+              onClick={() => navigate('/technologies')}
+              className="btn-neo flex items-center gap-2"
+            >
+              <Zap className="w-4 h-4" /> Initialize Discovery
+            </button>
+          </motion.div>
+        ) : (
+          <motion.div 
+            layout
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+          >
+            <AnimatePresence>
+              {filteredFavourites.map((tech) => (
+                <FavouriteCard key={tech._id} tech={tech} navigate={navigate} />
+              ))}
+            </AnimatePresence>
+          </motion.div>
+        )}
+      </div>
     </div>
   );
 };
+
+// --- LEGENDARY CARD COMPONENT ---
+const FavouriteCard = ({ tech, navigate }) => (
+  <motion.div
+    layout
+    initial={{ opacity: 0, scale: 0.95 }}
+    animate={{ opacity: 1, scale: 1 }}
+    exit={{ opacity: 0, scale: 0.95 }}
+    whileHover={{ y: -5 }}
+    className="group relative bg-surface/60 border border-white/5 backdrop-blur-xl rounded-2xl overflow-hidden hover:border-primary/30 transition-all duration-300"
+  >
+    {/* Hover Glow */}
+    <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+    
+    <div className="p-6 relative z-10 flex flex-col h-full">
+      {/* Header */}
+      <div className="flex justify-between items-start mb-4">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-xl bg-surfaceHighlight border border-white/10 flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform duration-300">
+            {tech.icon}
+          </div>
+          <div>
+            <h3 
+              onClick={() => navigate(`/technologies/${tech.slug}`)}
+              className="text-lg font-bold text-white group-hover:text-primary transition-colors cursor-pointer"
+            >
+              {tech.name}
+            </h3>
+            <span className="text-xs text-textMuted bg-white/5 px-2 py-0.5 rounded border border-white/5">
+              {tech.category}
+            </span>
+          </div>
+        </div>
+        
+        <button className="text-red-500 hover:text-red-400 p-2 hover:bg-red-500/10 rounded-lg transition-colors">
+          <Heart className="w-5 h-5 fill-current" />
+        </button>
+      </div>
+
+      <p className="text-sm text-gray-400 mb-6 line-clamp-2 flex-grow">
+        {tech.shortDescription}
+      </p>
+
+      {/* Progress Module */}
+      <div className="bg-black/20 rounded-xl p-4 border border-white/5 mb-4">
+        {tech.progress ? (
+          <>
+            <div className="flex justify-between items-end mb-2">
+              <span className="text-xs font-mono text-primary uppercase tracking-wider">System Sync</span>
+              <span className="text-sm font-bold text-white">{tech.progress.percentage}%</span>
+            </div>
+            <div className="w-full bg-gray-700/50 rounded-full h-1.5 overflow-hidden">
+              <motion.div 
+                initial={{ width: 0 }}
+                animate={{ width: `${tech.progress.percentage}%` }}
+                className="h-full bg-primary shadow-[0_0_10px_rgba(59,130,246,0.5)]"
+              />
+            </div>
+            <div className="mt-2 text-[10px] text-gray-500 text-right">
+              Last active: {tech.progress.lastUpdated}
+            </div>
+          </>
+        ) : (
+          <div className="flex items-center gap-2 text-sm text-gray-400">
+            <div className="w-2 h-2 rounded-full bg-gray-600" />
+            <span>Not initialized yet</span>
+          </div>
+        )}
+      </div>
+
+      {/* Action Footer */}
+      <div className="flex items-center gap-2 mt-auto">
+        <button 
+          onClick={() => navigate(`/technologies/${tech.slug}`)}
+          className="flex-1 btn-neo py-2 text-sm flex items-center justify-center gap-2"
+        >
+          {tech.progress ? <PlayCircle className="w-4 h-4" /> : <Zap className="w-4 h-4" />}
+          {tech.progress ? 'Resume' : 'Start'}
+        </button>
+        <button 
+          onClick={() => navigate(`/technologies/${tech.slug}`)}
+          className="px-4 py-2 rounded-xl border border-white/10 hover:bg-white/5 text-textMuted hover:text-white transition-colors"
+        >
+          Details
+        </button>
+      </div>
+    </div>
+  </motion.div>
+);
 
 export default Favourites;

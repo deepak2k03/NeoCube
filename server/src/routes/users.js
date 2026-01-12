@@ -1,12 +1,15 @@
 const express = require('express');
 const { validationRules, handleValidationErrors } = require('../utils/validators');
 const userController = require('../controllers/userController');
-const { authenticate } = require('../middleware/auth');
+
+// 👇 FIX: Change 'authenticate' to 'protect' to match your middleware file
+const { protect } = require('../middleware/authMiddleware');
 
 const router = express.Router();
 
 // All user routes require authentication
-router.use(authenticate);
+// 👇 FIX: Use the correct variable name here too
+router.use(protect);
 
 // @route   GET /api/v1/users/profile
 // @desc    Get user profile

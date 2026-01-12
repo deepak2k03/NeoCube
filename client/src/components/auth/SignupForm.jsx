@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Link, useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, Mail, Lock, User, Code, TrendingUp } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Eye, EyeOff, Mail, Lock, User, Check, Shield, Cpu, ArrowRight } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useNotifications } from '../../context/NotificationContext';
 import Button from '../common/Button';
@@ -11,297 +12,245 @@ const interests = [
   { id: 'ai-ml', name: 'AI/ML', icon: '🤖' },
   { id: 'devops', name: 'DevOps', icon: '⚙️' },
   { id: 'mobile', name: 'Mobile', icon: '📱' },
-  { id: 'data-science', name: 'Data Science', icon: '📊' },
-  { id: 'blockchain', name: 'Blockchain', icon: '🔗' },
+  { id: 'data-science', name: 'Data Sci', icon: '📊' },
+  { id: 'blockchain', name: 'Web3', icon: '🔗' },
   { id: 'cloud', name: 'Cloud', icon: '☁️' },
   { id: 'ui-ux', name: 'UI/UX', icon: '🎨' },
 ];
 
 const experienceLevels = [
-  { value: 'Beginner', label: 'Beginner - Just starting out' },
-  { value: 'Intermediate', label: 'Intermediate - Some experience' },
-  { value: 'Advanced', label: 'Advanced - Experienced developer' },
+  { value: 'Beginner', label: 'Novice (Beginner)' },
+  { value: 'Intermediate', label: 'Operative (Intermediate)' },
+  { value: 'Advanced', label: 'Architect (Advanced)' },
 ];
 
 const SignupForm = () => {
-  const { register } = useAuth();
-  const { showPromise, showError } = useNotifications();
+  const { register: registerAuth } = useAuth(); // Renamed to avoid conflict
+  const { showPromise } = useNotifications();
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
+  // React Hook Form
   const {
-    register: registerForm,
+    register,
     handleSubmit,
     watch,
+    setValue,
     formState: { errors },
-  } = useForm();
+  } = useForm({
+    defaultValues: {
+      interests: [] // Init array
+    }
+  });
 
   const password = watch('password');
+  const selectedInterests = watch('interests');
 
-  const getPasswordStrength = (password) => {
-    if (!password) return { strength: 0, text: 'Password strength', color: 'text-gray-400' };
-
-    let strength = 0;
-    if (password.length >= 8) strength++;
-    if (password.length >= 12) strength++;
-    if (/[a-z]/.test(password) && /[A-Z]/.test(password)) strength++;
-    if (/\d/.test(password)) strength++;
-    if (/[^a-zA-Z\d]/.test(password)) strength++;
-
-    const strengthMap = {
-      0: { text: 'Very weak', color: 'text-red-500' },
-      1: { text: 'Weak', color: 'text-red-400' },
-      2: { text: 'Fair', color: 'text-yellow-500' },
-      3: { text: 'Good', color: 'text-blue-500' },
-      4: { text: 'Strong', color: 'text-green-500' },
-      5: { text: 'Very strong', color: 'text-green-600' },
-    };
-
-    return { strength: (strength / 5) * 100, ...strengthMap[strength] };
+  // Logic: Password Strength
+  const getPasswordStrength = (pass) => {
+    if (!pass) return { score: 0, color: 'bg-gray-700' };
+    let score = 0;
+    if (pass.length >= 8) score++;
+    if (pass.length >= 12) score++;
+    if (/[A-Z]/.test(pass)) score++;
+    if (/[0-9]/.test(pass)) score++;
+    if (/[^A-Za-z0-9]/.test(pass)) score++;
+    
+    const colors = ['bg-red-500', 'bg-orange-500', 'bg-yellow-500', 'bg-blue-500', 'bg-green-500'];
+    return { score, color: colors[score - 1] || 'bg-red-500' };
   };
 
-  const passwordStrength = getPasswordStrength(password);
+  const strength = getPasswordStrength(password);
+
+  // Logic: Toggle Interest Chip
+  const toggleInterest = (id) => {
+    const current = selectedInterests || [];
+    const updated = current.includes(id) 
+      ? current.filter(i => i !== id)
+      : [...current, id];
+    setValue('interests', updated);
+  };
 
   const onSubmit = async (data) => {
     setIsLoading(true);
-
     try {
       await showPromise(
-        register(data),
-        'Creating your account...',
-        'Account created successfully! Welcome to Tech Learning Hub.',
-        'Registration failed. Please try again.'
+        registerAuth(data),
+        'Initializing user protocol...',
+        'Access Granted. Welcome to NeoCube.',
+        'Registration Failed. Identity Rejected.'
       );
-
-      // Navigate to dashboard on success
       navigate('/dashboard');
     } catch (error) {
-      // Error is handled by showPromise
-      console.error('Signup error:', error);
+      console.error(error);
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        {/* Header */}
-        <div className="text-center">
-          <div className="mx-auto h-16 w-16 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl flex items-center justify-center shadow-lg">
-            <User className="h-8 w-8 text-white" />
+    <div className="min-h-screen bg-background flex items-center justify-center py-12 px-4 sm:px-6 relative overflow-hidden">
+      
+      {/* Background FX */}
+      <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-primary/20 rounded-full blur-[120px]" />
+      <div className="absolute bottom-[-10%] left-[-10%] w-[500px] h-[500px] bg-secondary/10 rounded-full blur-[120px]" />
+      <div className="absolute inset-0 bg-grid opacity-10" />
+
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="w-full max-w-lg relative z-10"
+      >
+        <div className="glass-card p-8 border border-white/10 shadow-2xl backdrop-blur-xl">
+          
+          {/* Header */}
+          <div className="text-center mb-8">
+            <div className="inline-flex p-3 rounded-2xl bg-surfaceHighlight border border-white/5 mb-4 shadow-lg">
+              <Cpu className="w-8 h-8 text-primary" />
+            </div>
+            <h2 className="text-3xl font-display font-bold text-white mb-2">
+              Initialize <span className="text-gradient-primary">Identity</span>
+            </h2>
+            <p className="text-textMuted text-sm">
+              Create your operative profile to access the network.
+            </p>
           </div>
-          <h2 className="mt-6 text-3xl font-bold text-gray-900 dark:text-white">
-            Create your account
-          </h2>
-          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-            Join thousands of learners mastering new technologies
-          </p>
-        </div>
 
-        {/* Signup Form */}
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit(onSubmit)}>
-          <div className="space-y-4">
-            {/* Name Field */}
-            <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Full name
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <User className="h-5 w-5 text-gray-400" />
-                </div>
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+            
+            {/* Name */}
+            <div className="space-y-1">
+              <label className="text-xs font-mono text-gray-400 uppercase ml-1">Codename (Full Name)</label>
+              <div className="relative group">
+                <User className="absolute left-3 top-3 w-5 h-5 text-gray-500 group-focus-within:text-primary transition-colors" />
                 <input
-                  {...registerForm('name', {
-                    required: 'Name is required',
-                    minLength: {
-                      value: 2,
-                      message: 'Name must be at least 2 characters',
-                    },
-                  })}
-                  type="text"
-                  className="input pl-10"
-                  placeholder="Enter your full name"
-                  disabled={isLoading}
+                  {...register('name', { required: 'Name is required' })}
+                  className="w-full bg-black/20 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-white focus:border-primary/50 focus:ring-1 focus:ring-primary/50 outline-none transition-all"
+                  placeholder="Enter full name"
                 />
               </div>
-              {errors.name && (
-                <p className="mt-1 text-sm text-danger-600">
-                  {errors.name.message}
-                </p>
-              )}
+              {errors.name && <span className="text-xs text-red-400 ml-1">{errors.name.message}</span>}
             </div>
 
-            {/* Email Field */}
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Email address
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Mail className="h-5 w-5 text-gray-400" />
-                </div>
+            {/* Email */}
+            <div className="space-y-1">
+              <label className="text-xs font-mono text-gray-400 uppercase ml-1">Comms Link (Email)</label>
+              <div className="relative group">
+                <Mail className="absolute left-3 top-3 w-5 h-5 text-gray-500 group-focus-within:text-primary transition-colors" />
                 <input
-                  {...registerForm('email', {
-                    required: 'Email is required',
-                    pattern: {
-                      value: /^\S+@\S+$/i,
-                      message: 'Please enter a valid email address',
-                    },
-                  })}
                   type="email"
-                  className="input pl-10"
-                  placeholder="Enter your email"
-                  disabled={isLoading}
+                  {...register('email', { required: 'Email is required' })}
+                  className="w-full bg-black/20 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-white focus:border-primary/50 focus:ring-1 focus:ring-primary/50 outline-none transition-all"
+                  placeholder="name@example.com"
                 />
               </div>
-              {errors.email && (
-                <p className="mt-1 text-sm text-danger-600">
-                  {errors.email.message}
-                </p>
-              )}
+              {errors.email && <span className="text-xs text-red-400 ml-1">{errors.email.message}</span>}
             </div>
 
-            {/* Password Field */}
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Password
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Lock className="h-5 w-5 text-gray-400" />
-                </div>
+            {/* Password */}
+            <div className="space-y-2">
+              <label className="text-xs font-mono text-gray-400 uppercase ml-1">Security Key</label>
+              <div className="relative group">
+                <Lock className="absolute left-3 top-3 w-5 h-5 text-gray-500 group-focus-within:text-primary transition-colors" />
                 <input
-                  {...registerForm('password', {
-                    required: 'Password is required',
-                    minLength: {
-                      value: 8,
-                      message: 'Password must be at least 8 characters',
-                    },
-                  })}
                   type={showPassword ? 'text' : 'password'}
-                  className="input pl-10 pr-10"
-                  placeholder="Create a strong password"
-                  disabled={isLoading}
+                  {...register('password', { required: 'Password is required', minLength: { value: 8, message: 'Min 8 chars' } })}
+                  className="w-full bg-black/20 border border-white/10 rounded-xl py-3 pl-10 pr-12 text-white focus:border-primary/50 focus:ring-1 focus:ring-primary/50 outline-none transition-all"
+                  placeholder="••••••••"
                 />
                 <button
                   type="button"
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
                   onClick={() => setShowPassword(!showPassword)}
-                  disabled={isLoading}
+                  className="absolute right-3 top-3 text-gray-500 hover:text-white"
                 >
-                  {showPassword ? (
-                    <EyeOff className="h-5 w-5 text-gray-400 hover:text-gray-600" />
-                  ) : (
-                    <Eye className="h-5 w-5 text-gray-400 hover:text-gray-600" />
-                  )}
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
-              {errors.password && (
-                <p className="mt-1 text-sm text-danger-600">
-                  {errors.password.message}
-                </p>
-              )}
-              {/* Password strength indicator */}
+              
+              {/* Strength Bar */}
               {password && (
-                <div className="mt-2">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className={`text-xs ${passwordStrength.color}`}>
-                      {passwordStrength.text}
-                    </span>
-                    <span className="text-xs text-gray-500">
-                      {Math.round(passwordStrength.strength)}%
-                    </span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div
-                      className={`h-2 rounded-full transition-all duration-300 ${
-                        passwordStrength.strength < 40
-                          ? 'bg-red-500'
-                          : passwordStrength.strength < 60
-                          ? 'bg-yellow-500'
-                          : passwordStrength.strength < 80
-                          ? 'bg-blue-500'
-                          : 'bg-green-500'
-                      }`}
-                      style={{ width: `${passwordStrength.strength}%` }}
-                    />
-                  </div>
+                <div className="h-1 w-full bg-gray-800 rounded-full overflow-hidden">
+                  <motion.div 
+                    initial={{ width: 0 }}
+                    animate={{ width: `${(strength.score / 5) * 100}%` }}
+                    className={`h-full ${strength.color}`}
+                  />
                 </div>
               )}
+              {errors.password && <span className="text-xs text-red-400 ml-1">{errors.password.message}</span>}
             </div>
 
-            {/* Experience Level */}
-            <div>
-              <label htmlFor="experienceLevel" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Experience level
-              </label>
-              <select
-                {...registerForm('experienceLevel')}
-                className="input"
-                disabled={isLoading}
-              >
-                <option value="">Select your experience level</option>
-                {experienceLevels.map((level) => (
-                  <option key={level.value} value={level.value}>
-                    {level.label}
-                  </option>
-                ))}
-              </select>
-              {errors.experienceLevel && (
-                <p className="mt-1 text-sm text-danger-600">
-                  {errors.experienceLevel.message}
-                </p>
-              )}
-            </div>
-
-            {/* Interests */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Learning interests (optional)
-              </label>
-              <div className="grid grid-cols-2 gap-2">
-                {interests.map((interest) => (
-                  <label
-                    key={interest.id}
-                    className="flex items-center space-x-2 p-2 border border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800"
-                  >
-                    <input
-                      {...registerForm('interests')}
-                      type="checkbox"
-                      value={interest.name}
-                      className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-                      disabled={isLoading}
-                    />
-                    <span className="text-sm">{interest.icon} {interest.name}</span>
-                  </label>
-                ))}
+            {/* Experience */}
+            <div className="space-y-1">
+              <label className="text-xs font-mono text-gray-400 uppercase ml-1">Clearance Level</label>
+              <div className="relative">
+                <select
+                  {...register('experienceLevel')}
+                  className="w-full bg-black/20 border border-white/10 rounded-xl py-3 px-4 text-white focus:border-primary/50 outline-none appearance-none"
+                >
+                  {experienceLevels.map(lvl => (
+                    <option key={lvl.value} value={lvl.value} className="bg-surface text-white">
+                      {lvl.label}
+                    </option>
+                  ))}
+                </select>
+                <div className="absolute right-4 top-3.5 pointer-events-none">
+                  <ArrowRight className="w-4 h-4 text-gray-500 rotate-90" />
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Submit Button */}
-          <Button
-            type="submit"
-            className="w-full"
-            isLoading={isLoading}
-            disabled={isLoading}
-          >
-            Create account
-          </Button>
+            {/* Tech Chips */}
+            <div className="space-y-2">
+              <label className="text-xs font-mono text-gray-400 uppercase ml-1">Directives (Interests)</label>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {interests.map((interest) => {
+                  const isSelected = selectedInterests?.includes(interest.name);
+                  return (
+                    <button
+                      key={interest.id}
+                      type="button"
+                      onClick={() => toggleInterest(interest.name)}
+                      className={`
+                        flex items-center justify-center gap-2 px-2 py-2 rounded-lg text-xs font-medium border transition-all duration-200
+                        ${isSelected 
+                          ? 'bg-primary/20 border-primary text-white shadow-glow' 
+                          : 'bg-white/5 border-transparent text-textMuted hover:bg-white/10'}
+                      `}
+                    >
+                      <span>{interest.icon}</span>
+                      {interest.name}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
 
-          {/* Links */}
-          <div className="text-center">
-            <Link
-              to="/login"
-              className="text-sm text-primary-600 hover:text-primary-500 font-medium"
-            >
-              Already have an account? Sign in
-            </Link>
-          </div>
-        </form>
-      </div>
+            {/* Submit */}
+            <div className="pt-4">
+              <Button
+                type="submit"
+                className="w-full btn-neo py-3 text-base flex items-center justify-center gap-2"
+                isLoading={isLoading}
+              >
+                {!isLoading && <Shield className="w-5 h-5" />}
+                {isLoading ? 'Creating Record...' : 'Establish Connection'}
+              </Button>
+            </div>
+
+            <div className="text-center mt-6">
+              <p className="text-sm text-textMuted">
+                Already operative?{' '}
+                <Link to="/login" className="text-primary hover:text-primary-glow font-medium hover:underline">
+                  System Login
+                </Link>
+              </p>
+            </div>
+
+          </form>
+        </div>
+      </motion.div>
     </div>
   );
 };

@@ -1,351 +1,240 @@
-import React from 'react';
-import { Search, Filter, Grid, List } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import Card, { CardContent } from '../components/common/Card';
-import Button from '../components/common/Button';
-import { TechCardSkeleton } from '../components/common/LoadingSkeleton';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  Search, Filter, Grid, List, ChevronRight, Layers, Loader 
+} from 'lucide-react';
+import * as LucideIcons from 'lucide-react'; 
+import api from '../services/api'; // Ensure you have your Axios instance here
+
+// Static Field Info (For headers/colors) - we still keep this for UI styling
+import { FIELDS } from '../data/fieldsData'; 
 
 const Technologies = () => {
-  const [viewMode, setViewMode] = React.useState('grid');
-  const [searchQuery, setSearchQuery] = React.useState('');
-  const [selectedCategory, setSelectedCategory] = React.useState('All');
-  const [selectedDifficulty, setSelectedDifficulty] = React.useState('All');
-  const [isLoading, setIsLoading] = React.useState(false);
-
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  
+  // 1. Get Sector from URL
+  const currentSectorId = searchParams.get('sector') || 'cs';
+  const currentField = FIELDS.find(f => f.id === currentSectorId) || FIELDS[0];
 
-  const mockTechnologies = [
-    {
-      _id: '1',
-      name: 'React.js',
-      slug: 'reactjs',
-      shortDescription:
-        'A JavaScript library for building user interfaces with component-based architecture.',
-      category: 'Frontend',
-      difficulty: 'Intermediate',
-      isTrending: true,
-      tags: ['frontend', 'javascript', 'spa', 'ui', 'components'],
-      estimatedTime: '2-3 months',
-      icon: '⚛️',
-      color: '#61DAFB',
-    },
-    {
-      _id: '2',
-      name: 'Node.js',
-      slug: 'nodejs',
-      shortDescription:
-        "JavaScript runtime built on Chrome's V8 JavaScript engine for server-side development.",
-      category: 'Backend',
-      difficulty: 'Intermediate',
-      isTrending: true,
-      tags: ['backend', 'javascript', 'api', 'server', 'node'],
-      estimatedTime: '2-3 months',
-      icon: '🟢',
-      color: '#339933',
-    },
-    {
-      _id: '3',
-      name: 'MongoDB',
-      slug: 'mongodb',
-      shortDescription:
-        'A flexible, scalable NoSQL database that stores data in JSON-like documents.',
-      category: 'Database',
-      difficulty: 'Beginner',
-      isTrending: true,
-      tags: ['database', 'nosql', 'json', 'scalability', 'storage'],
-      estimatedTime: '1-2 months',
-      icon: '🍃',
-      color: '#47A248',
-    },
-    {
-      _id: '4',
-      name: 'Python',
-      slug: 'python',
-      shortDescription:
-        'A versatile, high-level programming language known for its simplicity and extensive libraries.',
-      category: 'Web Development',
-      difficulty: 'Beginner',
-      isTrending: true,
-      tags: ['python', 'programming', 'data-science', 'ai', 'automation'],
-      estimatedTime: '2-3 months',
-      icon: '🐍',
-      color: '#3776AB',
-    },
-    {
-      _id: '5',
-      name: 'Machine Learning Fundamentals',
-      slug: 'machine-learning-fundamentals',
-      shortDescription:
-        'Learn the core concepts and algorithms that power artificial intelligence and data science.',
-      category: 'AI/ML',
-      difficulty: 'Advanced',
-      isTrending: true,
-      tags: ['ai', 'ml', 'data-science', 'python', 'neural-networks'],
-      estimatedTime: '4-6 months',
-      icon: '🤖',
-      color: '#FF6B6B',
-    },
-    {
-      _id: '6',
-      name: 'DevOps Fundamentals',
-      slug: 'devops-fundamentals',
-      shortDescription:
-        'Master the practices and tools that bridge development and operations for faster, reliable software delivery.',
-      category: 'DevOps',
-      difficulty: 'Advanced',
-      isTrending: true,
-      tags: ['devops', 'ci-cd', 'docker', 'kubernetes', 'automation'],
-      estimatedTime: '3-4 months',
-      icon: '🔧',
-      color: '#FF9800',
-    },
-  ];
+  // 2. State for Database Data
+  const [technologies, setTechnologies] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const categories = [
-    'All',
-    'Frontend',
-    'Backend',
-    'Database',
-    'AI/ML',
-    'DevOps',
-    'Web Development',
-    'Mobile',
-  ];
-  const difficulties = ['All', 'Beginner', 'Intermediate', 'Advanced'];
+  const [viewMode, setViewMode] = useState('grid');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('All');
 
-  // ---- FILTER LOGIC ----
-  const normalizedSearch = searchQuery.trim().toLowerCase();
+  // 3. FETCH FROM API (The "Switch")
+  useEffect(() => {
+    const fetchTechnologies = async () => {
+      setLoading(true);
+      try {
+        // Call your backend with the sector filter
+        const { data } = await api.get('/technologies', {
+          params: { 
+            fieldId: currentSectorId,
+            category: selectedCategory !== 'All' ? selectedCategory : undefined,
+            search: searchQuery || undefined
+          }
+        });
+        
+        // The backend returns { success: true, data: { technologies: [...] } }
+        setTechnologies(data.data.technologies);
+      } catch (err) {
+        console.error("API Error:", err);
+        setError("Failed to load radar data.");
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const filteredTechnologies = mockTechnologies.filter((tech) => {
-    const matchesSearch =
-      normalizedSearch === '' ||
-      tech.name.toLowerCase().includes(normalizedSearch) ||
-      tech.category.toLowerCase().includes(normalizedSearch) ||
-      tech.tags.some((tag) => tag.toLowerCase().includes(normalizedSearch)) ||
-      tech.shortDescription.toLowerCase().includes(normalizedSearch);
+    // Debounce search slightly
+    const timer = setTimeout(() => {
+      fetchTechnologies();
+    }, 300);
 
-    const matchesCategory =
-      selectedCategory === 'All' || tech.category === selectedCategory;
+    return () => clearTimeout(timer);
+  }, [currentSectorId, selectedCategory, searchQuery]);
 
-    const matchesDifficulty =
-      selectedDifficulty === 'All' || tech.difficulty === selectedDifficulty;
-
-    return matchesSearch && matchesCategory && matchesDifficulty;
-  });
-
-  const listWrapperClass =
-    viewMode === 'grid'
-      ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'
-      : 'space-y-4';
-
-  const handleCardClick = (slug) => {
-    navigate(`/technologies/${slug}`);
-  };
-
-  const handleViewDetailsClick = (e, slug) => {
-    e.stopPropagation(); // prevent card click firing twice
-    navigate(`/technologies/${slug}`);
+  // Helper to render dynamic icons from string names
+  const renderIcon = (iconName) => {
+    const Icon = LucideIcons[iconName] || LucideIcons.Code2;
+    return <Icon className="w-full h-full" />;
   };
 
   return (
-    <div className="container-custom py-8">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-          Explore Technologies
-        </h1>
-        <p className="text-gray-600 dark:text-gray-400">
-          Discover and learn modern technologies with structured roadmaps.
-        </p>
+    <div className="min-h-screen bg-background relative overflow-x-hidden pt-28 pb-20 px-6">
+      
+      {/* Dynamic Background FX */}
+      <div className="fixed inset-0 pointer-events-none">
+        <div className={`absolute top-[-20%] left-[-10%] w-[600px] h-[600px] bg-gradient-to-br ${currentField.color} opacity-10 rounded-full blur-[150px]`} />
+        <div className="absolute inset-0 bg-grid opacity-20" />
       </div>
 
-      {/* Filters and Search */}
-      <Card className="mb-8">
-        <CardContent>
-          <div className="space-y-4">
-            {/* Search Bar */}
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
-              <input
-                type="text"
-                placeholder="Search technologies..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="input pl-10"
-              />
+      <div className="max-w-7xl mx-auto relative z-10">
+        
+        {/* HEADER */}
+        <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-6">
+          <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
+            <div className={`flex items-center gap-2 mb-2 font-medium ${currentField.accent}`}>
+              {currentField.icon}
+              <span>{currentField.name} Radar</span>
             </div>
+            <h1 className="text-4xl md:text-5xl font-display font-bold text-white">
+              Explore <span className={`text-transparent bg-clip-text bg-gradient-to-r ${currentField.color}`}>Technologies</span>
+            </h1>
+            
+            <button 
+              onClick={() => navigate('/fields')}
+              className="text-sm text-textMuted hover:text-white mt-4 flex items-center gap-2 group"
+            >
+              <Layers className="w-4 h-4" />
+              Switch Sector
+              <ChevronRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
+            </button>
+          </motion.div>
 
-            {/* Filters */}
-            <div className="flex flex-wrap items-center gap-4">
-              {/* Category Filter */}
-              <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-                <div className="flex items-center space-x-2">
-                  <Filter className="w-4 h-4 text-gray-500" />
-                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Category:
-                  </span>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {categories.map((category) => {
-                    const isActive = selectedCategory === category;
-                    return (
-                      <button
-                        key={category}
-                        type="button"
-                        onClick={() => setSelectedCategory(category)}
-                        className={
-                          'px-3 py-1 text-sm rounded-full border transition-colors ' +
-                          (isActive
-                            ? 'border-primary-500 bg-primary-50 text-primary-700 dark:border-primary-400 dark:bg-primary-500/10 dark:text-primary-200'
-                            : 'border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800')
-                        }
-                      >
-                        {category}
-                      </button>
-                    );
-                  })}
-                </div>
+          {/* Search Bar */}
+          <motion.div 
+            initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}
+            className="relative w-full md:w-96 group"
+          >
+            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+              <Search className="h-5 w-5 text-textMuted group-focus-within:text-primary transition-colors" />
+            </div>
+            <input
+              type="text"
+              className="w-full pl-11 pr-4 py-3 bg-surface/50 border border-white/10 rounded-xl text-white placeholder-textMuted focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all backdrop-blur-sm"
+              placeholder={`Search ${currentField.name}...`}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </motion.div>
+        </div>
+
+        {/* FILTERS */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+          className="glass-panel p-4 rounded-2xl mb-8 flex flex-col lg:flex-row gap-6 items-start lg:items-center justify-between"
+        >
+          <div className="flex flex-col sm:flex-row gap-6 w-full lg:w-auto">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-xs font-semibold text-textMuted uppercase tracking-wider">
+                <Layers className="w-3 h-3" /> Category
               </div>
-
-              {/* Difficulty Filter */}
-              <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Level:
-                </span>
-                <div className="flex flex-wrap gap-2">
-                  {difficulties.map((difficulty) => {
-                    const isActive = selectedDifficulty === difficulty;
-                    return (
-                      <button
-                        key={difficulty}
-                        type="button"
-                        onClick={() => setSelectedDifficulty(difficulty)}
-                        className={
-                          'px-3 py-1 text-sm rounded-full border transition-colors ' +
-                          (isActive
-                            ? 'border-primary-500 bg-primary-50 text-primary-700 dark:border-primary-400 dark:bg-primary-500/10 dark:text-primary-200'
-                            : 'border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800')
-                        }
-                      >
-                        {difficulty}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* View Mode */}
-              <div className="flex items-center space-x-2 ml-auto">
-                <Button
-                  variant={viewMode === 'grid' ? 'primary' : 'ghost'}
-                  size="sm"
-                  onClick={() => setViewMode('grid')}
-                >
-                  <Grid className="w-4 h-4" />
-                </Button>
-                <Button
-                  variant={viewMode === 'list' ? 'primary' : 'ghost'}
-                  size="sm"
-                  onClick={() => setViewMode('list')}
-                >
-                  <List className="w-4 h-4" />
-                </Button>
+              <div className="flex flex-wrap gap-2">
+                {['All', ...currentField.categories].map(cat => (
+                  <button
+                    key={cat}
+                    onClick={() => setSelectedCategory(cat)}
+                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                      selectedCategory === cat 
+                      ? 'bg-white text-black shadow-glow' 
+                      : 'bg-surfaceHighlight/50 text-textMuted hover:text-white hover:bg-surfaceHighlight'
+                    }`}
+                  >
+                    {cat}
+                  </button>
+                ))}
               </div>
             </div>
           </div>
-        </CardContent>
-      </Card>
 
-      {/* Technologies Grid/List */}
-      {isLoading ? (
-        <div className={listWrapperClass}>
-          {Array.from({ length: 6 }).map((_, index) => (
-            <TechCardSkeleton key={index} />
-          ))}
-        </div>
-      ) : filteredTechnologies.length === 0 ? (
-        <div className="text-center text-gray-500 dark:text-gray-400 py-12">
-          No technologies found. Try changing your search or filters.
-        </div>
-      ) : (
-        <div className={listWrapperClass}>
-          {filteredTechnologies.map((tech) => (
-            <Card
-              key={tech._id}
-              hover
-              className="group cursor-pointer h-full"
-              onClick={() => handleCardClick(tech.slug)}
-            >
-              <CardContent>
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-center space-x-3">
-                    <div className="text-3xl">{tech.icon}</div>
-                    <div>
-                      <h3 className="font-semibold text-gray-900 dark:text-white group-hover:text-primary-600 transition-colors">
-                        {tech.name}
-                      </h3>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
-                        {tech.category}
-                      </p>
-                    </div>
-                  </div>
-                  {tech.isTrending && (
-                    <span className="badge badge-warning">Trending</span>
-                  )}
-                </div>
+          <div className="flex bg-surfaceHighlight/50 p-1 rounded-lg border border-white/5">
+            <button onClick={() => setViewMode('grid')} className={`p-2 rounded-md ${viewMode === 'grid' ? 'bg-surface text-white' : 'text-textMuted'}`}>
+              <Grid className="w-4 h-4" />
+            </button>
+            <button onClick={() => setViewMode('list')} className={`p-2 rounded-md ${viewMode === 'list' ? 'bg-surface text-white' : 'text-textMuted'}`}>
+              <List className="w-4 h-4" />
+            </button>
+          </div>
+        </motion.div>
 
-                <p className="text-gray-600 dark:text-gray-400 mb-4 line-clamp-2">
-                  {tech.shortDescription}
-                </p>
-
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <span
-                      className={`
-                      badge badge-secondary
-                      ${tech.difficulty === 'Beginner' ? 'badge-success' : ''}
-                      ${tech.difficulty === 'Intermediate' ? 'badge-warning' : ''}
-                      ${tech.difficulty === 'Advanced' ? 'badge-danger' : ''}
-                    `}
-                    >
-                      {tech.difficulty}
-                    </span>
-                    <span className="text-sm text-gray-500 dark:text-gray-400">
-                      {tech.estimatedTime}
-                    </span>
-                  </div>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={(e) => handleViewDetailsClick(e, tech.slug)}
-                  >
-                    View Details
-                  </Button>
-                </div>
-
-                {/* Tags */}
-                <div className="mt-4 flex flex-wrap gap-1">
-                  {tech.tags.slice(0, 3).map((tag) => (
-                    <span
-                      key={tag}
-                      className="inline-block px-2 py-1 text-xs rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400"
-                    >
-                      {tag}
-                    </span>
-                  ))}
-                  {tech.tags.length > 3 && (
-                    <span className="inline-block px-2 py-1 text-xs rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400">
-                      +{tech.tags.length - 3}
-                    </span>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
+        {/* LOADING STATE */}
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-20 text-textMuted">
+            <Loader className="w-10 h-10 animate-spin mb-4 text-primary" />
+            <p>Scanning Sector Database...</p>
+          </div>
+        ) : error ? (
+           <div className="text-center py-20 text-red-400">{error}</div>
+        ) : technologies.length === 0 ? (
+          <div className="text-center py-20 text-textMuted border border-dashed border-white/10 rounded-3xl bg-surface/20">
+            <Filter className="w-12 h-12 mx-auto mb-4 opacity-20" />
+            <p className="text-lg">No technologies found.</p>
+          </div>
+        ) : (
+          <motion.div 
+            layout
+            className={viewMode === 'grid' ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" : "space-y-4"}
+          >
+            <AnimatePresence>
+              {technologies.map((tech) => (
+                <TechCard 
+                  key={tech._id} 
+                  tech={{...tech, iconComponent: renderIcon(tech.icon)}} 
+                  viewMode={viewMode} 
+                  accentColor={currentField.accent}
+                  onClick={() => navigate(`/technologies/${tech.slug}`)} 
+                />
+              ))}
+            </AnimatePresence>
+          </motion.div>
+        )}
+      </div>
     </div>
   );
 };
+
+// Sub-Component: The Tech Card
+const TechCard = ({ tech, viewMode, onClick, accentColor }) => (
+  <motion.div
+    layout
+    initial={{ opacity: 0, scale: 0.95 }}
+    animate={{ opacity: 1, scale: 1 }}
+    onClick={onClick}
+    className={`
+      group relative bg-surface/60 border border-white/5 backdrop-blur-sm 
+      hover:border-white/20 hover:shadow-[0_0_30px_rgba(255,255,255,0.05)] 
+      transition-all duration-300 cursor-pointer overflow-hidden
+      ${viewMode === 'grid' ? 'rounded-2xl p-6 flex flex-col h-full' : 'rounded-xl p-4 flex items-center gap-6'}
+    `}
+  >
+    <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+    
+    <div className={`
+      flex items-center justify-center rounded-xl bg-surfaceHighlight border border-white/5 
+      ${accentColor} group-hover:scale-110 group-hover:text-white transition-all duration-300
+      ${viewMode === 'grid' ? 'w-14 h-14 mb-4' : 'w-12 h-12 flex-shrink-0'}
+    `}>
+      {tech.iconComponent}
+    </div>
+
+    <div className="flex-grow z-10">
+      <div className="flex justify-between items-start">
+        <h3 className="text-lg font-bold text-white group-hover:text-primary transition-colors">
+          {tech.name}
+        </h3>
+        {tech.isTrending && viewMode === 'grid' && (
+          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-yellow-500/10 text-yellow-500 border border-yellow-500/20 uppercase">
+            Trending
+          </span>
+        )}
+      </div>
+      <p className="text-sm text-gray-400 line-clamp-2 mb-4 mt-2">
+        {tech.shortDescription}
+      </p>
+      <div className="flex items-center justify-between pt-4 border-t border-white/5 mt-auto">
+        <span className={`text-[10px] px-2 py-0.5 rounded border border-white/10 text-textMuted bg-white/5`}>
+          {tech.difficulty}
+        </span>
+        <ChevronRight className="w-4 h-4 text-textMuted group-hover:text-white transition-transform" />
+      </div>
+    </div>
+  </motion.div>
+);
 
 export default Technologies;
