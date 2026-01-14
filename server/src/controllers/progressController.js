@@ -1,273 +1,105 @@
-const User = require('../models/User');
 const Technology = require('../models/Technology');
-const Analytics = require('../models/Analytics');
+const User = require('../models/User');
+const { GoogleGenerativeAI } = require("@google/generative-ai");
 
-// @desc    Get user progress for a technology
-// @route   GET /api/v1/progress/:techId
-// @access  Private
-const getProgress = async (req, res) => {
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+// Fallback to flash if flash-lite is unavailable/busy
+const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" }); 
+
+// 1. Get all technologies (Legacy-Safe Filter)
+exports.getTechnologies = async (req, res) => {
   try {
-    const { techId } = req.params;
+    const { fieldId, category, search } = req.query;
+    let query = {};
 
-    // Check if technology exists
-    const technology = await Technology.findById(techId);
-    if (!technology) {
-      return res.status(404).json({
-        success: false,
-        message: 'Technology not found'
-      });
-    }
-
-    const user = await User.findById(req.user._id);
-    const progressEntry = user.progress.find(
-      p => p.technology.toString() === techId
-    );
-
-    if (!progressEntry) {
-      return res.status(200).json({
-        success: true,
-        data: {
-          progress: {
-            technology: techId,
-            completedSteps: [],
-            totalSteps: technology.roadmap.length,
-            percentage: 0,
-            startDate: null,
-            lastUpdated: null,
-            completedDate: null,
-            estimatedHoursSpent: 0
-          }
-        }
-      });
-    }
-
-    const progress = {
-      technology: techId,
-      completedSteps: progressEntry.completedSteps,
-      totalSteps: technology.roadmap.length,
-      percentage: Math.round((progressEntry.completedSteps.length / technology.roadmap.length) * 100),
-      startDate: progressEntry.startDate,
-      lastUpdated: progressEntry.lastUpdated,
-      completedDate: progressEntry.completedDate,
-      estimatedHoursSpent: progressEntry.hoursSpent || 0
-    };
-
-    res.status(200).json({
-      success: true,
-      data: { progress }
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
-  }
-};
-
-// @desc    Update progress for a technology
-// @route   POST /api/v1/progress/:techId
-// @access  Private
-const updateProgress = async (req, res) => {
-  try {
-    const { techId } = req.params;
-    const { completedSteps, hoursSpent } = req.body;
-
-    // Check if technology exists
-    const technology = await Technology.findById(techId);
-    if (!technology) {
-      return res.status(404).json({
-        success: false,
-        message: 'Technology not found'
-      });
-    }
-
-    const user = await User.findById(req.user._id);
-
-    // Find existing progress entry or create new one
-    let progressEntry = user.progress.find(
-      p => p.technology.toString() === techId
-    );
-
-    if (!progressEntry) {
-      // Create new progress entry
-      progressEntry = {
-        technology: techId,
-        completedSteps: completedSteps || [],
-        startDate: new Date(),
-        lastUpdated: new Date()
-      };
-      user.progress.push(progressEntry);
-    } else {
-      // Update existing progress entry
-      progressEntry.completedSteps = completedSteps || [];
-      progressEntry.lastUpdated = new Date();
-    }
-
-    // Add hours spent if provided
-    if (hoursSpent) {
-      progressEntry.hoursSpent = (progressEntry.hoursSpent || 0) + hoursSpent;
-      user.totalHoursSpent += hoursSpent;
-    }
-
-    // Check if all steps are completed
-    if (progressEntry.completedSteps.length === technology.roadmap.length && !progressEntry.completedDate) {
-      progressEntry.completedDate = new Date();
-
-      // Record analytics for completion
-      await Analytics.recordAction(user._id, techId, 'complete_step', {
-        stepId: 'completion',
-        stepTitle: 'Technology completed',
-        timeSpent: hoursSpent || 0
-      });
-    }
-
-    // Record analytics for each completed step
-    for (const stepId of completedSteps) {
-      const step = technology.roadmap.id(stepId);
-      if (step) {
-        await Analytics.recordAction(user._id, techId, 'complete_step', {
-          stepId: stepId,
-          stepTitle: step.title,
-          timeSpent: hoursSpent ? hoursSpent / completedSteps.length : 0
-        });
+    if (fieldId && fieldId !== 'all') {
+      if (fieldId === 'cs') {
+        query.$or = [{ sector: 'cs' }, { sector: { $exists: false } }, { sector: null }];
+      } else {
+        query.sector = fieldId;
       }
     }
 
-    // Update user level based on completed technologies
-    const completedTechnologies = user.progress.filter(p => p.completedDate).length;
-    user.level = Math.floor(completedTechnologies / 3) + 1; // Level up every 3 completed technologies
+    if (category && category !== 'All') query.category = category;
+    if (search) query.name = { $regex: search, $options: 'i' };
 
-    await user.save();
-
-    const progress = {
-      technology: techId,
-      completedSteps: progressEntry.completedSteps,
-      totalSteps: technology.roadmap.length,
-      percentage: Math.round((progressEntry.completedSteps.length / technology.roadmap.length) * 100),
-      startDate: progressEntry.startDate,
-      lastUpdated: progressEntry.lastUpdated,
-      completedDate: progressEntry.completedDate,
-      estimatedHoursSpent: progressEntry.hoursSpent || 0
-    };
-
-    res.status(200).json({
-      success: true,
-      message: 'Progress updated successfully',
-      data: { progress }
-    });
+    const technologies = await Technology.find(query).select('-roadmap');
+    res.status(200).json({ success: true, data: { technologies } }); 
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
-// @desc    Mark individual step as complete/incomplete
-// @route   POST /api/v1/progress/:techId/step/:stepId
-// @access  Private
-const updateStepProgress = async (req, res) => {
+// 2. Get tech by slug (BULLETPROOF VERSION)
+exports.getTechnologyBySlug = async (req, res) => {
   try {
-    const { techId, stepId } = req.params;
-    const { completed, hoursSpent } = req.body;
+    const { slug } = req.params;
+    let tech = await Technology.findOne({ slug });
 
-    // Check if technology exists
-    const technology = await Technology.findById(techId);
-    if (!technology) {
-      return res.status(404).json({
-        success: false,
-        message: 'Technology not found'
-      });
+    if (!tech) return res.status(404).json({ success: false, message: 'Technology not found in DB' });
+
+    // IF Roadmap exists, return immediately
+    if (tech.roadmap && tech.roadmap.length > 0) {
+      return res.status(200).json({ success: true, data: { technology: tech } });
     }
 
-    // Check if step exists
-    const step = technology.roadmap.id(stepId);
-    if (!step) {
-      return res.status(404).json({
-        success: false,
-        message: 'Step not found'
-      });
+    // AI GENERATION SAFETY BLOCK
+    try {
+      console.log(`🤖 Attempting to generate roadmap for: ${tech.name}...`);
+      const prompt = `Generate a learning roadmap for ${tech.name}. Return ONLY JSON: {"description": "...", "roadmap": [{"title": "...", "description": "...", "duration": "...", "resources": [{"title": "...", "url": "...", "type": "video/article/documentation/course"}]}]}`;
+      
+      const result = await model.generateContent(prompt);
+      const text = result.response.text().replace(/```json|```/g, "").trim(); // Clean cleanup
+      const aiData = JSON.parse(text);
+
+      tech.roadmap = aiData.roadmap;
+      if (aiData.description) tech.description = aiData.description;
+      await tech.save();
+      console.log("✅ Roadmap generated and saved!");
+
+    } catch (aiError) {
+      // IF AI FAILS: Log it, but DO NOT CRASH. Return the tech anyway.
+      console.error("⚠️ AI Generation Failed:", aiError.message);
+      console.error("Returning technology without roadmap to prevent crash.");
+      // We return the tech with an empty roadmap so the page still loads
     }
+
+    res.status(200).json({ success: true, data: { technology: tech } });
+  } catch (error) {
+    console.error("Server Error:", error);
+    res.status(500).json({ success: false, message: "Server Error: " + error.message });
+  }
+};
+
+// 3. Update Progress (Standard)
+exports.updateProgress = async (req, res) => {
+  try {
+    const { slug } = req.params;
+    const { stepIndex, status, notes } = req.body;
+
+    const tech = await Technology.findOne({ slug });
+    if (!tech) return res.status(404).json({ success: false, message: 'Tech not found' });
 
     const user = await User.findById(req.user._id);
-
-    // Find or create progress entry
-    let progressEntry = user.progress.find(
-      p => p.technology.toString() === techId
-    );
-
-    if (!progressEntry) {
-      progressEntry = {
-        technology: techId,
-        completedSteps: [],
-        startDate: new Date(),
-        lastUpdated: new Date()
-      };
-      user.progress.push(progressEntry);
+    let techProgress = user.progress.find(p => p.technology.toString() === tech._id.toString());
+    
+    if (!techProgress) {
+      techProgress = { technology: tech._id, steps: [] };
+      user.progress.push(techProgress); 
     }
 
-    // Update step completion status
-    const stepIndex = progressEntry.completedSteps.indexOf(stepId);
-    if (completed && stepIndex === -1) {
-      progressEntry.completedSteps.push(stepId);
-    } else if (!completed && stepIndex > -1) {
-      progressEntry.completedSteps.splice(stepIndex, 1);
+    const stepIdx = techProgress.steps.findIndex(s => s.stepIndex === stepIndex);
+    if (stepIdx >= 0) {
+      if (status) techProgress.steps[stepIdx].status = status;
+      if (notes !== undefined) techProgress.steps[stepIdx].notes = notes;
+    } else {
+      techProgress.steps.push({ stepIndex, status: status || 'pending', notes: notes || '' });
     }
 
-    progressEntry.lastUpdated = new Date();
-
-    // Add hours spent if provided
-    if (hoursSpent) {
-      progressEntry.hoursSpent = (progressEntry.hoursSpent || 0) + hoursSpent;
-      user.totalHoursSpent += hoursSpent;
-    }
-
-    // Check if all steps are completed
-    if (progressEntry.completedSteps.length === technology.roadmap.length && !progressEntry.completedDate) {
-      progressEntry.completedDate = new Date();
-    } else if (progressEntry.completedSteps.length < technology.roadmap.length && progressEntry.completedDate) {
-      progressEntry.completedDate = undefined;
-    }
-
-    // Record analytics
-    await Analytics.recordAction(user._id, techId, 'complete_step', {
-      stepId: stepId,
-      stepTitle: step.title,
-      timeSpent: hoursSpent || 0
-    });
-
-    // Update user level
-    const completedTechnologies = user.progress.filter(p => p.completedDate).length;
-    user.level = Math.floor(completedTechnologies / 3) + 1;
-
+    user.markModified('progress'); 
     await user.save();
-
-    const progress = {
-      technology: techId,
-      completedSteps: progressEntry.completedSteps,
-      totalSteps: technology.roadmap.length,
-      percentage: Math.round((progressEntry.completedSteps.length / technology.roadmap.length) * 100),
-      startDate: progressEntry.startDate,
-      lastUpdated: progressEntry.lastUpdated,
-      completedDate: progressEntry.completedDate,
-      estimatedHoursSpent: progressEntry.hoursSpent || 0
-    };
-
-    res.status(200).json({
-      success: true,
-      message: `Step ${completed ? 'completed' : 'uncompleted'} successfully`,
-      data: { progress }
-    });
+    res.status(200).json({ success: true, data: techProgress });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
+    res.status(500).json({ success: false, message: "Cloud sync failed" });
   }
-};
-
-module.exports = {
-  getProgress,
-  updateProgress,
-  updateStepProgress
 };

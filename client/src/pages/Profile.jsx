@@ -1,20 +1,83 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { 
-  User, Calendar, Award, Target, Clock, 
-  Zap, Edit3, Save, X, Cpu, Shield, 
-  Terminal, Activity, ChevronRight 
+  User, Calendar, Award, Target, Clock, Zap, Edit3, Save, X, 
+  Cpu, Shield, Terminal, Activity, ChevronRight, Fingerprint, 
+  Hash, Mail, Sparkles
 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
-import Button from "../components/common/Button";
-import ProgressRing from "../components/common/ProgressRing";
+import { 
+  motion, AnimatePresence, useMotionValue, useSpring, useTransform, useMotionTemplate 
+} from "framer-motion";
 import api from "../services/api";
 
-const avatarPresets = [
-  { id: "avatar1", label: "A", color: "#3b82f6" }, // primary blue
-  { id: "avatar2", label: "B", color: "#ec4899" }, // pink
-  { id: "avatar3", label: "C", color: "#10b981" }, // emerald
-  { id: "avatar4", label: "D", color: "#f59e0b" }, // amber
+// --- ASSETS & CONFIG ---
+const AVATAR_PRESETS = [
+  { id: "avatar1", label: "Alpha", color: "#3b82f6", gradient: "from-blue-600 to-cyan-400" },
+  { id: "avatar2", label: "Beta", color: "#ec4899", gradient: "from-pink-600 to-rose-400" },
+  { id: "avatar3", label: "Gamma", color: "#10b981", gradient: "from-emerald-600 to-teal-400" },
+  { id: "avatar4", label: "Delta", color: "#f59e0b", gradient: "from-amber-600 to-orange-400" },
 ];
+
+// --- 3D TILT CARD COMPONENT ---
+const TiltCard = ({ children, className = "" }) => {
+  const ref = useRef(null);
+  const x = useMotionValue(0);
+  const y = useMotionValue(0);
+  const mouseX = useSpring(x, { stiffness: 500, damping: 100 });
+  const mouseY = useSpring(y, { stiffness: 500, damping: 100 });
+
+  function onMouseMove({ currentTarget, clientX, clientY }) {
+    const { left, top, width, height } = currentTarget.getBoundingClientRect();
+    x.set(clientX - left - width / 2);
+    y.set(clientY - top - height / 2);
+  }
+
+  return (
+    <motion.div
+      ref={ref}
+      onMouseMove={onMouseMove}
+      onMouseLeave={() => { x.set(0); y.set(0); }}
+      style={{ 
+        rotateX: useTransform(mouseY, [-50, 50], [2, -2]), 
+        rotateY: useTransform(mouseX, [-50, 50], [-2, 2]), 
+        transformStyle: "preserve-3d" 
+      }}
+      className={`relative group ${className}`}
+    >
+      <div style={{ transform: "translateZ(0px)" }} className="h-full bg-zinc-900/40 backdrop-blur-xl border border-white/10 rounded-[2rem] overflow-hidden relative shadow-2xl transition-all duration-500">
+        <motion.div
+          style={{ background: useMotionTemplate`radial-gradient(500px circle at ${mouseX}px ${mouseY}px, rgba(255, 255, 255, 0.05), transparent 80%)` }}
+          className="pointer-events-none absolute -inset-px opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+        />
+        <div className="relative z-10 h-full p-8">{children}</div>
+      </div>
+    </motion.div>
+  );
+};
+
+// --- NEON PROGRESS RING ---
+const NeonRing = ({ percentage, color = "#3b82f6" }) => {
+  const radius = 60;
+  const circumference = 2 * Math.PI * radius;
+  const strokeDashoffset = circumference - (percentage / 100) * circumference;
+
+  return (
+    <div className="relative flex items-center justify-center w-40 h-40">
+      <div className="absolute inset-0 bg-primary/20 blur-3xl rounded-full" />
+      <svg className="transform -rotate-90 w-full h-full drop-shadow-[0_0_10px_rgba(59,130,246,0.5)]">
+        <circle cx="80" cy="80" r={radius} stroke="rgba(255,255,255,0.05)" strokeWidth="8" fill="transparent" />
+        <circle
+          cx="80" cy="80" r={radius} stroke={color} strokeWidth="8" fill="transparent"
+          strokeDasharray={circumference} strokeDashoffset={strokeDashoffset} strokeLinecap="round"
+          className="transition-all duration-1000 ease-out"
+        />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center text-white">
+        <span className="text-3xl font-black">{percentage}%</span>
+        <span className="text-[10px] uppercase tracking-widest text-zinc-500">Synced</span>
+      </div>
+    </div>
+  );
+};
 
 const Profile = () => {
   const [profile, setProfile] = useState(null);
@@ -22,441 +85,295 @@ const Profile = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
 
-  // Form State
   const [formData, setFormData] = useState({
-    name: "",
-    bio: "",
-    experienceLevel: "Beginner",
-    interestsText: "",
-    avatarPreset: "avatar1",
-    avatarColor: "#3b82f6",
+    name: "", bio: "", experienceLevel: "Beginner",
+    interestsText: "", avatarPreset: "avatar1", avatarColor: "#3b82f6",
   });
 
-  // --- LOGIC: FETCH PROFILE ---
   useEffect(() => {
     const fetchProfile = async () => {
       try {
         setIsLoadingProfile(true);
         const res = await api.get("/users/profile");
         const user = res.data?.data?.user || res.data?.user || res.data;
-
         setProfile(user);
-
-        // Init form
         setFormData({
-          name: user.name || "",
-          bio: user.bio || "",
+          name: user.name || "", bio: user.bio || "",
           experienceLevel: user.experienceLevel || "Beginner",
           interestsText: Array.isArray(user.interests) ? user.interests.join(", ") : "",
           avatarPreset: user.avatar?.presetOption || "avatar1",
           avatarColor: user.avatar?.color || "#3b82f6",
         });
-      } catch (err) {
-        console.error("Failed to load profile:", err);
-      } finally {
-        setIsLoadingProfile(false);
-      }
+      } catch (err) { console.error("Failed to load profile:", err); } 
+      finally { setIsLoadingProfile(false); }
     };
     fetchProfile();
   }, []);
 
-  // --- LOGIC: HANDLERS ---
-  const handleEditClick = () => setIsEditing(true);
-  
-  const handleCancelEdit = () => {
-    if (!profile) { setIsEditing(false); return; }
-    setFormData({
-      name: profile.name || "",
-      bio: profile.bio || "",
-      experienceLevel: profile.experienceLevel || "Beginner",
-      interestsText: Array.isArray(profile.interests) ? profile.interests.join(", ") : "",
-      avatarPreset: profile.avatar?.presetOption || "avatar1",
-      avatarColor: profile.avatar?.color || "#3b82f6",
-    });
-    setIsEditing(false);
-  };
-
-  const handleFormChange = (field, value) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
-  };
-
-  const handleAvatarPresetChange = (preset) => {
-    const presetDef = avatarPresets.find((p) => p.id === preset);
-    setFormData((prev) => ({
-      ...prev,
-      avatarPreset: preset,
-      avatarColor: presetDef?.color || prev.avatarColor,
-    }));
-  };
-
   const handleSaveProfile = async (e) => {
     e.preventDefault();
-    if (!profile) return;
-
     try {
       setIsSaving(true);
       const interestsArray = formData.interestsText.split(",").map((s) => s.trim()).filter(Boolean);
-
       const payload = {
-        name: formData.name,
-        bio: formData.bio,
-        experienceLevel: formData.experienceLevel,
-        interests: interestsArray,
-        avatar: {
-          type: "preset",
-          presetOption: formData.avatarPreset,
-          color: formData.avatarColor,
-        },
+        name: formData.name, bio: formData.bio,
+        experienceLevel: formData.experienceLevel, interests: interestsArray,
+        avatar: { type: "preset", presetOption: formData.avatarPreset, color: formData.avatarColor },
       };
-
       const res = await api.put("/users/profile", payload);
-      const updatedUser = res.data?.data?.user || res.data?.user || res.data || payload;
-
-      setProfile(updatedUser);
+      setProfile(res.data?.data?.user || res.data?.user || payload);
       setIsEditing(false);
-    } catch (err) {
-      console.error("Failed to update profile:", err);
-    } finally {
-      setIsSaving(false);
-    }
+    } catch (err) { console.error("Update failed", err); } 
+    finally { setIsSaving(false); }
   };
 
-  // --- LOADING / ERROR STATES ---
   if (isLoadingProfile) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-16 h-16 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
-          <p className="text-primary font-mono animate-pulse">LOADING DOSSIER...</p>
+      <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
+        <div className="relative">
+          <div className="w-20 h-20 border-4 border-t-blue-500 border-r-purple-500 border-b-transparent border-l-transparent rounded-full animate-spin" />
+          <div className="absolute inset-0 flex items-center justify-center font-mono text-xs text-blue-500 animate-pulse">LOAD</div>
         </div>
       </div>
     );
   }
 
-  if (!profile) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="p-8 border border-red-500/20 bg-red-500/5 rounded-2xl text-center">
-          <Shield className="w-12 h-12 text-red-500 mx-auto mb-4" />
-          <h2 className="text-white font-bold mb-2">Access Denied</h2>
-          <p className="text-red-400">Could not retrieve user profile.</p>
-        </div>
-      </div>
-    );
-  }
+  if (!profile) return null;
 
-  // --- DATA PREP ---
-  const stats = profile.stats || {
-    totalTechnologies: 0,
-    completedTechnologies: 0,
-    inProgressTechnologies: 0,
-    totalHoursSpent: 0,
-    streak: 0,
-    level: 1,
-  };
-
-  const completionPct = stats.totalTechnologies > 0
-    ? Math.round((stats.completedTechnologies / stats.totalTechnologies) * 100)
-    : 0;
-
-  // Mock Recent Progress (since API might not provide it yet)
-  const recentProgress = [
-    { technology: "React.js", progress: 68, lastUpdated: "2 days ago" },
-    { technology: "Node.js", progress: 45, lastUpdated: "1 week ago" },
-    { technology: "MongoDB", progress: 30, lastUpdated: "2 weeks ago" },
-  ];
+  const stats = profile.stats || { totalTechnologies: 0, completedTechnologies: 0, inProgressTechnologies: 0, totalHoursSpent: 0, streak: 0, level: 1 };
+  const completionPct = stats.totalTechnologies > 0 ? Math.round((stats.completedTechnologies / stats.totalTechnologies) * 100) : 0;
+  const recentProgress = [{ technology: "React.js", progress: 68, lastUpdated: "2d ago" }, { technology: "Node.js", progress: 45, lastUpdated: "1w ago" }, { technology: "MongoDB", progress: 30, lastUpdated: "2w ago" }];
+  const currentAvatar = AVATAR_PRESETS.find(p => p.id === formData.avatarPreset) || AVATAR_PRESETS[0];
 
   return (
-    <div className="min-h-screen bg-background relative overflow-x-hidden pt-28 pb-20 px-6">
+    <div className="min-h-screen bg-[#030712] text-white pt-24 pb-20 px-6 relative overflow-x-hidden font-sans selection:bg-indigo-500/30">
       
-      {/* 1. ATMOSPHERIC BACKGROUND */}
+      {/* 1. CINEMATIC BACKGROUND */}
       <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute top-20 left-[-10%] w-[500px] h-[500px] bg-primary/10 rounded-full blur-[120px]" />
-        <div className="absolute bottom-20 right-[-10%] w-[500px] h-[500px] bg-secondary/10 rounded-full blur-[120px]" />
-        <div className="absolute inset-0 bg-grid opacity-20" />
+        <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-indigo-600/10 rounded-full blur-[120px] animate-pulse-slow" />
+        <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-cyan-600/10 rounded-full blur-[120px]" />
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:60px_60px] [mask-image:radial-gradient(ellipse_60%_60%_at_50%_50%,black,transparent)]" />
       </div>
 
       <div className="max-w-7xl mx-auto relative z-10">
         
         {/* 2. HEADER */}
-        <div className="flex items-end justify-between mb-12">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
           <div>
-            <div className="flex items-center gap-2 text-primary mb-2 font-mono text-xs tracking-widest uppercase">
-              <User className="w-4 h-4" /> Operative Identification
+            <div className="flex items-center gap-2 text-indigo-400 mb-3 font-mono text-xs tracking-[0.2em] uppercase">
+              <Fingerprint className="w-4 h-4" /> Operative Dossier
             </div>
-            <h1 className="text-4xl md:text-5xl font-display font-bold text-white">
-              User <span className="text-gradient-primary">Dossier</span>
+            <h1 className="text-5xl md:text-6xl font-black text-white tracking-tighter">
+              User <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400">Profile</span>
             </h1>
           </div>
-          <div className="hidden md:block">
-            <div className="px-4 py-2 bg-white/5 border border-white/10 rounded-full text-xs font-mono text-textMuted flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-              SYSTEM ONLINE
-            </div>
+          <div className="px-4 py-2 rounded-full bg-zinc-900/50 border border-white/10 flex items-center gap-3 backdrop-blur-md">
+            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_10px_#10b981]" />
+            <span className="text-xs font-bold text-zinc-300 tracking-wider">SECURE CONNECTION ESTABLISHED</span>
           </div>
         </div>
 
         <div className="grid lg:grid-cols-12 gap-8">
           
-          {/* LEFT COLUMN: IDENTITY CARD */}
+          {/* --- LEFT: HOLOGRAPHIC ID CARD --- */}
           <div className="lg:col-span-4 space-y-6">
-            <motion.div 
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              className="glass-card p-6 relative overflow-hidden"
-            >
-              {/* Scan Line Animation */}
-              <div className="absolute top-0 left-0 w-full h-1 bg-primary/50 shadow-[0_0_15px_rgba(59,130,246,0.5)] animate-[scan_3s_ease-in-out_infinite] opacity-50" />
+            <TiltCard className="h-full">
+               {/* Holographic Scan Effect */}
+               <div className="absolute top-0 left-0 w-full h-1 bg-indigo-500/50 shadow-[0_0_20px_rgba(99,102,241,0.5)] animate-[scan_4s_ease-in-out_infinite] opacity-30 z-20 pointer-events-none" />
+               
+               <div className="flex flex-col items-center text-center relative z-10">
+                  {/* Avatar Container */}
+                  <div className="relative mb-8 group cursor-pointer">
+                    <div className="absolute inset-0 bg-gradient-to-br from-indigo-500 to-cyan-500 rounded-full blur-2xl opacity-20 group-hover:opacity-40 transition-opacity" />
+                    <div 
+                      className="relative w-36 h-36 rounded-full flex items-center justify-center text-5xl font-black text-white border-4 border-zinc-950 shadow-2xl z-10 bg-gradient-to-br"
+                      style={{ backgroundImage: `linear-gradient(135deg, ${currentAvatar.color}, #18181b)` }}
+                    >
+                      {profile.name?.charAt(0).toUpperCase()}
+                      {/* Inner Ring */}
+                      <div className="absolute inset-2 border border-white/20 rounded-full" />
+                    </div>
+                    <div className="absolute bottom-2 right-2 bg-zinc-950 border border-white/10 px-3 py-1 rounded-full text-xs font-bold text-white shadow-xl z-20 flex items-center gap-1">
+                      <Shield className="w-3 h-3 text-indigo-400" /> LVL {stats.level}
+                    </div>
+                  </div>
 
-              <div className="flex flex-col items-center text-center">
-                {/* Avatar */}
-                <div className="relative mb-6 group">
-                  <div className="absolute inset-0 bg-primary/20 rounded-full blur-xl group-hover:bg-primary/40 transition-all" />
-                  <div 
-                    className="relative w-32 h-32 rounded-full flex items-center justify-center text-4xl font-bold text-white border-2 border-white/20 shadow-2xl z-10"
-                    style={{ backgroundColor: profile.avatar?.color || "#3b82f6" }}
+                  <h2 className="text-3xl font-bold text-white mb-1 tracking-tight">{profile.name}</h2>
+                  <div className="flex items-center gap-2 text-zinc-500 text-sm font-mono mb-6">
+                    <Mail className="w-3 h-3" /> {profile.email}
+                  </div>
+
+                  {/* Tags */}
+                  <div className="flex flex-wrap justify-center gap-2 mb-8">
+                     <span className={`px-3 py-1 rounded-lg border text-xs font-bold uppercase tracking-wide ${
+                        profile.experienceLevel === 'Beginner' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' :
+                        profile.experienceLevel === 'Intermediate' ? 'bg-amber-500/10 border-amber-500/20 text-amber-400' :
+                        'bg-rose-500/10 border-rose-500/20 text-rose-400'
+                      }`}>
+                        {profile.experienceLevel}
+                      </span>
+                      <span className="px-3 py-1 rounded-lg bg-white/5 border border-white/10 text-xs text-zinc-300 flex items-center gap-1">
+                        <Calendar className="w-3 h-3" />
+                        Joined {new Date(profile.createdAt || Date.now()).toLocaleDateString()}
+                      </span>
+                  </div>
+
+                  <div className="w-full bg-zinc-950/50 rounded-2xl p-4 text-left border border-white/5 mb-8 relative overflow-hidden">
+                    <div className="absolute top-0 left-0 w-1 h-full bg-indigo-500" />
+                    <div className="text-[10px] font-mono text-indigo-400 mb-2 uppercase tracking-widest">Directive / Bio</div>
+                    <p className="text-sm text-zinc-300 leading-relaxed italic">
+                      "{profile.bio || "No directive established. Operative is currently in stealth mode."}"
+                    </p>
+                  </div>
+
+                  <button 
+                    onClick={() => setIsEditing(!isEditing)}
+                    className="w-full py-4 rounded-xl bg-white text-black font-bold flex items-center justify-center gap-2 hover:bg-zinc-200 transition-colors shadow-[0_0_20px_rgba(255,255,255,0.1)]"
                   >
-                    {profile.name?.charAt(0).toUpperCase()}
-                  </div>
-                  <div className="absolute bottom-0 right-0 bg-surface border border-white/10 px-2 py-1 rounded-lg text-xs font-bold text-white shadow-lg z-20">
-                    LVL {stats.level}
-                  </div>
-                </div>
-
-                {/* Info */}
-                <h2 className="text-2xl font-bold text-white mb-1">{profile.name}</h2>
-                <p className="text-textMuted text-sm font-mono mb-4">{profile.email}</p>
-
-                <div className="flex items-center justify-center gap-2 mb-6">
-                  <span className={`px-3 py-1 rounded border text-xs font-bold uppercase tracking-wide ${
-                    profile.experienceLevel === 'Beginner' ? 'bg-green-500/10 border-green-500/20 text-green-400' :
-                    profile.experienceLevel === 'Intermediate' ? 'bg-yellow-500/10 border-yellow-500/20 text-yellow-400' :
-                    'bg-red-500/10 border-red-500/20 text-red-400'
-                  }`}>
-                    {profile.experienceLevel}
-                  </span>
-                  <span className="px-3 py-1 rounded bg-white/5 border border-white/10 text-xs text-gray-300 flex items-center gap-1">
-                    <Calendar className="w-3 h-3" />
-                    {profile.createdAt ? new Date(profile.createdAt).toLocaleDateString() : "Unknown"}
-                  </span>
-                </div>
-
-                {/* Bio Section */}
-                <div className="w-full bg-black/20 rounded-xl p-4 text-left border border-white/5 mb-6">
-                  <div className="text-xs font-mono text-gray-500 mb-2 uppercase">Bio / Directive</div>
-                  <p className="text-sm text-gray-300 leading-relaxed italic">
-                    "{profile.bio || "No directive established."}"
-                  </p>
-                </div>
-
-                {/* Interests */}
-                <div className="w-full text-left">
-                   <div className="text-xs font-mono text-gray-500 mb-2 uppercase">Focus Areas</div>
-                   <div className="flex flex-wrap gap-2">
-                     {(profile.interests || []).length > 0 ? (
-                       profile.interests.map((tag) => (
-                         <span key={tag} className="px-2 py-1 rounded bg-secondary/10 border border-secondary/20 text-secondary text-xs">
-                           {tag}
-                         </span>
-                       ))
-                     ) : (
-                       <span className="text-xs text-textMuted">No protocols defined.</span>
-                     )}
-                   </div>
-                </div>
-
-                <div className="w-full h-px bg-white/10 my-6" />
-
-                <button 
-                  onClick={handleEditClick}
-                  className="w-full btn-neo flex items-center justify-center gap-2"
-                >
-                  <Edit3 className="w-4 h-4" /> Update Credentials
-                </button>
-              </div>
-            </motion.div>
+                    <Edit3 className="w-4 h-4" /> {isEditing ? 'Close Interface' : 'Update Credentials'}
+                  </button>
+               </div>
+            </TiltCard>
           </div>
 
-          {/* RIGHT COLUMN: STATS & EDITING */}
+          {/* --- RIGHT: DATA CENTER --- */}
           <div className="lg:col-span-8 space-y-6">
             
-            {/* EDIT FORM OVERLAY (Shows when editing) */}
+            {/* 1. EDIT INTERFACE (Collapsible) */}
             <AnimatePresence>
               {isEditing && (
                 <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  exit={{ opacity: 0, height: 0 }}
-                  className="glass-card border border-primary/30 overflow-hidden"
+                  initial={{ opacity: 0, height: 0, y: -20 }}
+                  animate={{ opacity: 1, height: 'auto', y: 0 }}
+                  exit={{ opacity: 0, height: 0, y: -20 }}
+                  className="overflow-hidden"
                 >
-                  <div className="p-6 bg-primary/5">
-                    <div className="flex justify-between items-center mb-6">
-                      <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                        <Cpu className="w-5 h-5 text-primary" /> Modify User Data
-                      </h3>
-                      <button onClick={handleCancelEdit} className="text-textMuted hover:text-white">
-                        <X className="w-5 h-5" />
-                      </button>
+                  <div className="bg-zinc-900/50 backdrop-blur-xl border border-indigo-500/30 rounded-[2rem] p-8 shadow-2xl relative">
+                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-cyan-500" />
+                    
+                    <div className="flex justify-between items-center mb-8">
+                       <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                         <Cpu className="w-5 h-5 text-indigo-400" /> Neural Configuration
+                       </h3>
+                       <button onClick={() => setIsEditing(false)} className="p-2 hover:bg-white/10 rounded-full transition-colors"><X className="w-5 h-5" /></button>
                     </div>
 
                     <form onSubmit={handleSaveProfile} className="space-y-6">
-                      <div className="grid md:grid-cols-2 gap-6">
-                        <div className="space-y-2">
-                          <label className="text-xs font-mono text-gray-400 uppercase">Full Name</label>
-                          <input 
-                            type="text" 
-                            value={formData.name} 
-                            onChange={e => handleFormChange("name", e.target.value)}
-                            className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-primary outline-none focus:ring-1 focus:ring-primary"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <label className="text-xs font-mono text-gray-400 uppercase">Clearance Level</label>
-                          <select 
-                            value={formData.experienceLevel} 
-                            onChange={e => handleFormChange("experienceLevel", e.target.value)}
-                            className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-primary outline-none"
-                          >
-                            <option value="Beginner">Beginner</option>
-                            <option value="Intermediate">Intermediate</option>
-                            <option value="Advanced">Advanced</option>
-                          </select>
-                        </div>
-                      </div>
+                       <div className="grid md:grid-cols-2 gap-6">
+                          <InputGroup label="Identity Name">
+                             <input type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} 
+                               className="w-full bg-zinc-950 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-indigo-500 outline-none transition-colors font-mono text-sm" />
+                          </InputGroup>
+                          <InputGroup label="Clearance Level">
+                             <select value={formData.experienceLevel} onChange={e => setFormData({...formData, experienceLevel: e.target.value})}
+                               className="w-full bg-zinc-950 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-indigo-500 outline-none transition-colors font-mono text-sm appearance-none cursor-pointer">
+                                <option value="Beginner">Beginner</option>
+                                <option value="Intermediate">Intermediate</option>
+                                <option value="Advanced">Advanced</option>
+                             </select>
+                          </InputGroup>
+                       </div>
 
-                      <div className="space-y-2">
-                        <label className="text-xs font-mono text-gray-400 uppercase">Directive (Bio)</label>
-                        <textarea 
-                          rows={2} 
-                          value={formData.bio} 
-                          onChange={e => handleFormChange("bio", e.target.value)}
-                          className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-primary outline-none"
-                        />
-                      </div>
+                       <InputGroup label="Primary Directive (Bio)">
+                          <textarea rows={2} value={formData.bio} onChange={e => setFormData({...formData, bio: e.target.value})}
+                            className="w-full bg-zinc-950 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-indigo-500 outline-none transition-colors text-sm" />
+                       </InputGroup>
 
-                      <div className="space-y-2">
-                        <label className="text-xs font-mono text-gray-400 uppercase">Protocols (Interests)</label>
-                        <input 
-                          type="text" 
-                          value={formData.interestsText} 
-                          onChange={e => handleFormChange("interestsText", e.target.value)}
-                          placeholder="e.g. React, Cybersecurity, Neural Networks"
-                          className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-primary outline-none"
-                        />
-                      </div>
+                       <InputGroup label="Active Protocols (Interests)">
+                          <div className="relative">
+                            <Hash className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600" />
+                            <input type="text" value={formData.interestsText} onChange={e => setFormData({...formData, interestsText: e.target.value})}
+                              placeholder="e.g. React, Cybersecurity, Neural Networks"
+                              className="w-full bg-zinc-950 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-white focus:border-indigo-500 outline-none transition-colors text-sm" />
+                          </div>
+                       </InputGroup>
 
-                      <div className="space-y-3">
-                        <label className="text-xs font-mono text-gray-400 uppercase">Avatar Matrix</label>
-                        <div className="flex gap-3">
-                          {avatarPresets.map((preset) => (
-                            <button
-                              key={preset.id}
-                              type="button"
-                              onClick={() => handleAvatarPresetChange(preset.id)}
-                              className={`
-                                w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all
-                                ${formData.avatarPreset === preset.id ? 'border-white scale-110 shadow-glow' : 'border-transparent opacity-70'}
-                              `}
-                              style={{ backgroundColor: preset.color }}
-                            >
-                              <span className="text-xs font-bold text-white">{preset.label}</span>
-                            </button>
-                          ))}
-                        </div>
-                      </div>
+                       <div>
+                          <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-3 block">Avatar Matrix</label>
+                          <div className="flex gap-4">
+                             {AVATAR_PRESETS.map((preset) => (
+                                <button key={preset.id} type="button" onClick={() => setFormData({...formData, avatarPreset: preset.id, avatarColor: preset.color})}
+                                  className={`w-12 h-12 rounded-xl flex items-center justify-center border-2 transition-all ${formData.avatarPreset === preset.id ? 'border-white scale-110 shadow-[0_0_15px_rgba(255,255,255,0.3)]' : 'border-transparent opacity-50 hover:opacity-100 bg-zinc-800'}`}
+                                  style={{ background: formData.avatarPreset === preset.id ? preset.color : undefined }}>
+                                   {formData.avatarPreset === preset.id && <Sparkles className="w-5 h-5 text-white" />}
+                                </button>
+                             ))}
+                          </div>
+                       </div>
 
-                      <div className="flex justify-end gap-3 pt-4 border-t border-white/5">
-                        <Button variant="ghost" type="button" onClick={handleCancelEdit}>Cancel</Button>
-                        <button 
-                          type="submit" 
-                          disabled={isSaving}
-                          className="px-6 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg font-medium transition-colors flex items-center gap-2"
-                        >
-                          <Save className="w-4 h-4" /> Save Changes
-                        </button>
-                      </div>
+                       <div className="flex justify-end pt-4 border-t border-white/5">
+                          <button type="submit" disabled={isSaving} className="px-8 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold transition-all shadow-lg shadow-indigo-600/20 flex items-center gap-2">
+                             {isSaving ? <span className="animate-spin">⏳</span> : <Save className="w-4 h-4" />} Save Configuration
+                          </button>
+                       </div>
                     </form>
                   </div>
                 </motion.div>
               )}
             </AnimatePresence>
 
-            {/* HUD STATS GRID */}
+            {/* 2. STATS BENTO GRID */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <StatsCard icon={Target} label="Technologies" value={stats.totalTechnologies} color="text-blue-400" />
-              <StatsCard icon={Clock} label="Uptime Hours" value={stats.totalHoursSpent} color="text-green-400" />
-              <StatsCard icon={Award} label="Sync Streak" value={stats.streak} color="text-yellow-400" />
-              <StatsCard icon={Zap} label="User Level" value={stats.level} color="text-purple-400" />
+              <StatBox icon={Target} label="Technologies" value={stats.totalTechnologies} color="text-cyan-400" />
+              <StatBox icon={Clock} label="Uptime Hours" value={stats.totalHoursSpent} color="text-emerald-400" />
+              <StatBox icon={Award} label="Sync Streak" value={stats.streak} color="text-amber-400" />
+              <StatBox icon={Zap} label="User Level" value={stats.level} color="text-purple-400" />
             </div>
 
-            {/* PROGRESS MONITOR */}
-            <div className="glass-card p-6">
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                  <Activity className="w-5 h-5 text-secondary" /> System Progress
-                </h3>
-              </div>
-
-              <div className="flex flex-col md:flex-row items-center gap-8">
-                {/* Stats Text */}
-                <div className="flex-1 grid grid-cols-2 gap-6 w-full">
-                  <div className="p-4 bg-black/20 rounded-xl border border-white/5">
-                    <div className="text-xs text-gray-500 uppercase font-mono mb-1">Completed</div>
-                    <div className="text-3xl font-bold text-white">{stats.completedTechnologies}</div>
-                  </div>
-                  <div className="p-4 bg-black/20 rounded-xl border border-white/5">
-                    <div className="text-xs text-gray-500 uppercase font-mono mb-1">In Progress</div>
-                    <div className="text-3xl font-bold text-primary">{stats.inProgressTechnologies}</div>
-                  </div>
-                </div>
-
-                {/* Progress Ring */}
-                <div className="relative">
-                  <ProgressRing 
-                    percentage={completionPct} 
-                    size={140} 
-                    color="primary" 
-                    showPercentage={true} 
-                  />
-                  {/* Decorative Glow behind ring */}
-                  <div className="absolute inset-0 bg-primary/20 blur-2xl -z-10 rounded-full" />
-                </div>
-              </div>
-            </div>
-
-            {/* RECENT ACTIVITY LOG */}
-            <div className="glass-card p-6">
-              <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                <Terminal className="w-5 h-5 text-gray-400" /> Activity Log
-              </h3>
-              
-              <div className="space-y-3">
-                {recentProgress.map((item, index) => (
-                  <div key={index} className="group flex items-center justify-between p-4 bg-black/20 border border-white/5 rounded-xl hover:border-white/10 hover:bg-white/5 transition-all">
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded bg-surfaceHighlight flex items-center justify-center text-white border border-white/5">
-                        <Zap className="w-5 h-5 text-primary" />
-                      </div>
-                      <div>
-                        <div className="text-white font-medium group-hover:text-primary transition-colors">
-                          {item.technology}
+            {/* 3. PROGRESS MONITOR */}
+            <TiltCard>
+               <div className="flex flex-col md:flex-row items-center gap-10">
+                  <div className="flex-1 space-y-6 w-full">
+                     <div>
+                        <h3 className="text-xl font-bold text-white flex items-center gap-2 mb-2">
+                           <Activity className="w-5 h-5 text-indigo-400" /> System Completion
+                        </h3>
+                        <p className="text-zinc-400 text-sm">Overall synchronization across all active protocols.</p>
+                     </div>
+                     <div className="grid grid-cols-2 gap-4">
+                        <div className="p-4 rounded-2xl bg-zinc-950 border border-white/5">
+                           <div className="text-xs text-zinc-500 uppercase tracking-widest mb-1">Done</div>
+                           <div className="text-2xl font-black text-white">{stats.completedTechnologies}</div>
                         </div>
-                        <div className="text-xs text-gray-500">Updated {item.lastUpdated}</div>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center gap-4">
-                      <div className="text-right hidden sm:block">
-                        <div className="text-sm font-bold text-white">{item.progress}%</div>
-                        <div className="text-[10px] text-gray-500 uppercase">Sync Status</div>
-                      </div>
-                      <div className="w-12 h-1 bg-gray-700 rounded-full overflow-hidden">
-                        <div className="h-full bg-primary" style={{ width: `${item.progress}%` }} />
-                      </div>
-                    </div>
+                        <div className="p-4 rounded-2xl bg-zinc-950 border border-white/5">
+                           <div className="text-xs text-zinc-500 uppercase tracking-widest mb-1">Active</div>
+                           <div className="text-2xl font-black text-indigo-400">{stats.inProgressTechnologies}</div>
+                        </div>
+                     </div>
                   </div>
-                ))}
-              </div>
+                  <div className="relative">
+                     <NeonRing percentage={completionPct} color="#6366f1" />
+                  </div>
+               </div>
+            </TiltCard>
+
+            {/* 4. TERMINAL LOGS */}
+            <div className="bg-zinc-950/50 border border-white/10 rounded-[2rem] p-8 backdrop-blur-md relative overflow-hidden">
+               <div className="flex items-center gap-2 mb-6 text-zinc-400 font-mono text-xs uppercase tracking-widest">
+                  <Terminal className="w-4 h-4" /> System Logs_Recent_Activity
+               </div>
+               <div className="space-y-4">
+                  {recentProgress.map((item, i) => (
+                     <div key={i} className="group flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 hover:border-indigo-500/30 transition-all cursor-default">
+                        <div className="flex items-center gap-4">
+                           <div className="w-10 h-10 rounded-lg bg-zinc-900 flex items-center justify-center text-indigo-400 border border-white/5 font-mono text-sm">
+                              0{i+1}
+                           </div>
+                           <div>
+                              <div className="text-white font-bold group-hover:text-indigo-400 transition-colors">{item.technology}</div>
+                              <div className="text-xs text-zinc-500 font-mono">UPDATED: {item.lastUpdated.toUpperCase()}</div>
+                           </div>
+                        </div>
+                        <div className="flex items-center gap-4">
+                           <div className="text-right hidden sm:block">
+                              <div className="text-sm font-bold text-white">{item.progress}%</div>
+                              <div className="text-[10px] text-zinc-600 uppercase">Synced</div>
+                           </div>
+                           <ChevronRight className="w-4 h-4 text-zinc-600 group-hover:text-white group-hover:translate-x-1 transition-all" />
+                        </div>
+                     </div>
+                  ))}
+               </div>
             </div>
 
           </div>
@@ -467,13 +384,20 @@ const Profile = () => {
 };
 
 // --- SUB-COMPONENTS ---
-const StatsCard = ({ icon: Icon, label, value, color }) => (
-  <div className="bg-surface/60 border border-white/5 p-4 rounded-xl flex flex-col items-center justify-center text-center backdrop-blur-sm hover:border-white/10 transition-colors group">
-    <div className={`mb-2 p-2 rounded-full bg-white/5 ${color} group-hover:scale-110 transition-transform`}>
+const StatBox = ({ icon: Icon, label, value, color }) => (
+  <div className="bg-zinc-900/40 border border-white/5 p-5 rounded-2xl flex flex-col items-center justify-center text-center backdrop-blur-md hover:bg-white/5 transition-colors group">
+    <div className={`mb-3 p-3 rounded-xl bg-zinc-950 border border-white/10 ${color} group-hover:scale-110 transition-transform shadow-lg`}>
       <Icon className="w-5 h-5" />
     </div>
-    <div className="text-2xl font-bold text-white">{value}</div>
-    <div className="text-[10px] uppercase tracking-wider text-textMuted mt-1">{label}</div>
+    <div className="text-2xl font-black text-white">{value}</div>
+    <div className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold mt-1">{label}</div>
+  </div>
+);
+
+const InputGroup = ({ label, children }) => (
+  <div className="space-y-2">
+    <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider ml-1">{label}</label>
+    {children}
   </div>
 );
 

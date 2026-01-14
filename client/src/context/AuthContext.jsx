@@ -1,200 +1,90 @@
-import React, { createContext, useContext, useReducer, useEffect } from 'react';
-import { authService } from '../services/authService';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 
-// Initial state
-const initialState = {
-  user: null,
-  token: null,
-  isLoading: true,
-  isAuthenticated: false,
-};
+// Create the context
+const AuthContext = createContext(null);
 
-// Action types
-const AUTH_ACTIONS = {
-  AUTH_START: 'AUTH_START',
-  AUTH_SUCCESS: 'AUTH_SUCCESS',
-  AUTH_FAILURE: 'AUTH_FAILURE',
-  LOGOUT: 'LOGOUT',
-  LOADING_START: 'LOADING_START',
-  LOADING_END: 'LOADING_END',
-  UPDATE_USER: 'UPDATE_USER',
-};
-
-// Reducer
-const authReducer = (state, action) => {
-  switch (action.type) {
-    case AUTH_ACTIONS.AUTH_START:
-      return {
-        ...state,
-        isLoading: true,
-      };
-
-    case AUTH_ACTIONS.AUTH_SUCCESS:
-      return {
-        ...state,
-        user: action.payload.user,
-        token: action.payload.token,
-        isLoading: false,
-        isAuthenticated: true,
-      };
-
-    case AUTH_ACTIONS.AUTH_FAILURE:
-      return {
-        ...state,
-        user: null,
-        token: null,
-        isLoading: false,
-        isAuthenticated: false,
-      };
-
-    case AUTH_ACTIONS.LOGOUT:
-      return {
-        ...state,
-        user: null,
-        token: null,
-        isLoading: false,
-        isAuthenticated: false,
-      };
-
-    case AUTH_ACTIONS.LOADING_START:
-      return {
-        ...state,
-        isLoading: true,
-      };
-
-    case AUTH_ACTIONS.LOADING_END:
-      return {
-        ...state,
-        isLoading: false,
-      };
-
-    case AUTH_ACTIONS.UPDATE_USER:
-      return {
-        ...state,
-        user: { ...state.user, ...action.payload },
-      };
-
-    default:
-      return state;
-  }
-};
-
-// Create context
-const AuthContext = createContext();
-
-// Provider component
 export const AuthProvider = ({ children }) => {
-  const [state, dispatch] = useReducer(authReducer, initialState);
+  const [user, setUser] = useState(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Initialize auth state on app load
+  // 1. Initialize State on Load (Prevent "Guest" flash)
   useEffect(() => {
-    const initAuth = async () => {
-      const token = authService.getStoredToken();
-      const user = authService.getStoredUser();
+    const initializeAuth = () => {
+      try {
+        const token = localStorage.getItem('token');
+        const savedUser = localStorage.getItem('user');
 
-      if (token && user) {
-        try {
-          // Verify token is still valid
-          const response = await authService.getCurrentUser();
-          dispatch({
-            type: AUTH_ACTIONS.AUTH_SUCCESS,
-            payload: {
-              user: response.data.user,
-              token,
-            },
-          });
-        } catch (error) {
-          // Token is invalid, clear it
-          authService.clearAuthData();
-          dispatch({ type: AUTH_ACTIONS.AUTH_FAILURE });
+        if (token && savedUser) {
+          // If data exists, we are logged in
+          setUser(JSON.parse(savedUser));
+          setIsAuthenticated(true);
+        } else {
+          // If missing data, ensure we are logged out
+          setUser(null);
+          setIsAuthenticated(false);
         }
-      } else {
-        dispatch({ type: AUTH_ACTIONS.AUTH_FAILURE });
+      } catch (error) {
+        console.error("Auth Initialization Error:", error);
+        localStorage.clear();
+      } finally {
+        setIsLoading(false);
       }
     };
 
-    initAuth();
+    initializeAuth();
   }, []);
 
-  // Login function
-  const login = async (credentials) => {
-    dispatch({ type: AUTH_ACTIONS.AUTH_START });
-
-    try {
-      const response = await authService.login(credentials);
-      const { user, token } = response.data;
-
-      // Store auth data
-      authService.storeAuthData(user, token);
-
-      dispatch({
-        type: AUTH_ACTIONS.AUTH_SUCCESS,
-        payload: { user, token },
-      });
-
-      return response;
-    } catch (error) {
-      dispatch({ type: AUTH_ACTIONS.AUTH_FAILURE });
-      throw error;
-    }
+  // 2. Login Action
+  // This expects the token and user data that Login.jsx fetched
+  const login = (token, userData) => {
+    localStorage.setItem('token', token);
+    localStorage.setItem('user', JSON.stringify(userData));
+    
+    // Update State IMMEDIATELY to fix the loop
+    setUser(userData);
+    setIsAuthenticated(true);
   };
 
-  // Register function
-  const register = async (userData) => {
-    dispatch({ type: AUTH_ACTIONS.AUTH_START });
-
-    try {
-      const response = await authService.register(userData);
-      const { user, token } = response.data;
-
-      // Store auth data
-      authService.storeAuthData(user, token);
-
-      dispatch({
-        type: AUTH_ACTIONS.AUTH_SUCCESS,
-        payload: { user, token },
-      });
-
-      return response;
-    } catch (error) {
-      dispatch({ type: AUTH_ACTIONS.AUTH_FAILURE });
-      throw error;
-    }
-  };
-
-  // Logout function
+  // 3. Logout Action
   const logout = () => {
-    authService.clearAuthData();
-    dispatch({ type: AUTH_ACTIONS.LOGOUT });
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    
+    setUser(null);
+    setIsAuthenticated(false);
+    
+    // Force a hard redirect to ensure all states are cleared
+    window.location.href = '/login'; 
   };
 
-  // Update user profile
+  // 4. Update Profile Action (Optional helper)
   const updateProfile = (userData) => {
-    dispatch({
-      type: AUTH_ACTIONS.UPDATE_USER,
-      payload: userData,
+    setUser((prev) => {
+      const updated = { ...prev, ...userData };
+      localStorage.setItem('user', JSON.stringify(updated));
+      return updated;
     });
-
-    // Update stored user data
-    const currentUser = authService.getStoredUser();
-    if (currentUser) {
-      authService.storeAuthData({ ...currentUser, ...userData }, state.token);
-    }
   };
 
-  // Context value
+  // 5. Context Value
   const value = {
-    ...state,
+    user,
+    isAuthenticated,
+    isLoading,
     login,
-    register,
     logout,
-    updateProfile,
+    updateProfile
   };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={value}>
+      {!isLoading && children}
+    </AuthContext.Provider>
+  );
 };
 
-// Custom hook to use auth context
+// Custom Hook
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
@@ -202,3 +92,5 @@ export const useAuth = () => {
   }
   return context;
 };
+
+export default AuthContext;
