@@ -1,5 +1,5 @@
 const path = require('path');
-// 🔥 FORCE LOAD .ENV to ensure key is found
+// 🔥 FORCE LOAD .ENV from parent folder if needed
 require('dotenv').config({ path: path.resolve(__dirname, '../../.env') }); 
 require('dotenv').config(); 
 
@@ -14,37 +14,51 @@ if (!rawKey) {
   console.error("\n❌ FATAL ERROR: GEMINI_API_KEY is missing from process.env!");
   console.error("   Check your .env file in the server root.");
 } else {
-  // Print masked key to prove it loaded
   console.log(`\n✅ AI Controller Loaded Key: ...${rawKey.trim().slice(-4)}`);
 }
 
-// --- 2. INITIALIZE AI (WITH SANITIZATION) ---
-// .trim() fixes "API Key Not Valid" caused by accidental spaces in .env
+// --- 2. INITIALIZE AI ---
 const genAI = new GoogleGenerativeAI(rawKey ? rawKey.trim() : "MISSING_KEY");
 
-// 🔥 CRITICAL FIX: We are using 'gemini-2.0-flash'
-// Your logs showed '2.5-flash-lite' failed. 2.0 is more stable.
-const MODEL_NAME = "gemini-2.0-flash"; 
+// ✅ FIX: Use 'gemini-flash-latest' which is the stable alias for your key
+const MODEL_NAME = "gemini-flash-latest"; 
 const model = genAI.getGenerativeModel({ model: MODEL_NAME });
 
 console.log(`✅ AI Model Initialized: ${MODEL_NAME}\n`);
 
-// --- HELPER: Extract JSON safely ---
+// --- 3. ROBUST JSON EXTRACTOR (Fixes "Invalid JSON" errors) ---
 const extractJSON = (text) => {
   try {
+    console.log(`[DEBUG] Raw AI Output Length: ${text.length}`);
+    
+    // 1. Remove Markdown code blocks first
     let clean = text.replace(/```json/g, '').replace(/```/g, '');
-    const firstBrace = clean.indexOf('{');
-    const lastBrace = clean.lastIndexOf('}');
-    if (firstBrace !== -1 && lastBrace !== -1) {
-      clean = clean.substring(firstBrace, lastBrace + 1);
-    } else if (clean.trim().startsWith('[')) {
-      const firstBracket = clean.indexOf('[');
-      const lastBracket = clean.lastIndexOf(']');
-      clean = clean.substring(firstBracket, lastBracket + 1);
+
+    // 2. Try parsing the clean text directly
+    try {
+        return JSON.parse(clean);
+    } catch (e) {
+        // If that fails, it has extra text. Let's hunt for the JSON structure.
     }
-    return JSON.parse(clean);
+
+    // 3. Regex Hunt: Find the first '[' and last ']' (for Arrays)
+    const arrayMatch = clean.match(/\[[\s\S]*\]/);
+    if (arrayMatch) {
+        try {
+            return JSON.parse(arrayMatch[0]);
+        } catch (e) { /* Continue to object check */ }
+    }
+
+    // 4. Regex Hunt: Find the first '{' and last '}' (for Objects)
+    const objectMatch = clean.match(/\{[\s\S]*\}/);
+    if (objectMatch) {
+        return JSON.parse(objectMatch[0]);
+    }
+
+    throw new Error("No JSON structure found in response");
+
   } catch (e) {
-    console.error("JSON PARSE ERROR. Raw text:", text);
+    console.error("JSON PARSE ERROR. Raw text snippet:", text.slice(0, 100) + "...");
     throw new Error("AI returned invalid JSON.");
   }
 };
@@ -53,10 +67,10 @@ const extractJSON = (text) => {
 const generatePremiumRoadmap = async (name, fieldId) => {
   console.log(`[GEN] Sending request to Gemini (${MODEL_NAME}) for: ${name}...`);
 
-  // 1. Metadata
+  // 1. Metadata Prompt (Strict JSON)
   const metaPrompt = `
     Act as a Curriculum Architect. Provide metadata for a course on "${name}" (Sector: ${fieldId}).
-    Return ONLY JSON:
+    CRITICAL: Return ONLY raw JSON. Do NOT use Markdown. Do NOT say "Here is the JSON".
     {
       "description": "2 sentence professional summary",
       "category": "Development",
@@ -68,21 +82,23 @@ const generatePremiumRoadmap = async (name, fieldId) => {
     const metaResult = await model.generateContent(metaPrompt);
     const meta = extractJSON(metaResult.response.text());
 
-    // 2. Roadmap
+    // 2. Roadmap Prompt (Strict JSON Array)
     const roadmapPrompt = `
       Create a detailed learning roadmap for ${name}.
-      Return a raw JSON ARRAY of objects. Each object must match this schema EXACTLY:
-      {
-        "title": "Step Title",
-        "description": "Deep technical explanation (3-4 sentences)",
-        "duration": "e.g. 2 hours",
-        "resources": [
-           { "title": "Official Docs", "url": "https://google.com/search?q=${name}", "type": "article" },
-           { "title": "Senior Tip", "url": "Tip text here", "type": "pro-tip" },
-           { "title": "Lethal Quest", "url": "Challenge text here", "type": "quest" },
-           { "title": "Interview Prep", "url": "Question text here", "type": "interview" }
-        ]
-      }
+      CRITICAL: Return ONLY a raw JSON ARRAY. Do NOT use Markdown. Do NOT explain.
+      [
+        {
+          "title": "Step Title",
+          "description": "Deep technical explanation (3-4 sentences)",
+          "duration": "e.g. 2 hours",
+          "resources": [
+             { "title": "Official Docs", "url": "https://google.com/search?q=${name}", "type": "article" },
+             { "title": "Senior Tip", "url": "Tip text here", "type": "pro-tip" },
+             { "title": "Lethal Quest", "url": "Challenge text here", "type": "quest" },
+             { "title": "Interview Prep", "url": "Question text here", "type": "interview" }
+          ]
+        }
+      ]
       Generate 10 steps.
     `;
 
@@ -93,8 +109,6 @@ const generatePremiumRoadmap = async (name, fieldId) => {
   } catch (err) {
     console.error(`\n❌ GEMINI API ERROR:`);
     console.error(`   Message: ${err.message}`);
-    // If it's a 400 error, it's the key or model. 
-    // If it's 503, it's Google being overloaded.
     throw err;
   }
 };
@@ -139,7 +153,6 @@ exports.getTechnologyBySlug = async (req, res) => {
         console.log(`[AUTO-FIX] Success! Saved ${tech.roadmap.length} steps.`);
       } catch (genError) {
         console.error("[AUTO-FIX] Failed to generate:", genError.message);
-        // Don't crash the request, just return what we have (user sees offline screen)
       }
     }
 
