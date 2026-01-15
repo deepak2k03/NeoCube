@@ -1,10 +1,48 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-// ✅ FIX: Import custom API service
 import api from '../services/api'; 
-import { Layout, Target, Zap, Award, Sparkles, ChevronLeft } from 'lucide-react';
+import { 
+  Layout, Target, Zap, Award, Sparkles, ChevronLeft, 
+  CheckCircle2, Lock, Unlock, PlayCircle, BookOpen, 
+  Terminal, Shield, Trophy
+} from 'lucide-react';
 import { toast, Toaster } from 'react-hot-toast';
-import RoadmapStep from '../components/RoadmapStep';
+import { motion, AnimatePresence } from 'framer-motion';
+
+// --- SUB-COMPONENT: The Resource Card ---
+const ResourceCard = ({ resource }) => {
+  const icons = {
+    article: <BookOpen className="w-4 h-4" />,
+    video: <PlayCircle className="w-4 h-4" />,
+    quest: <Shield className="w-4 h-4" />,
+    'pro-tip': <Sparkles className="w-4 h-4" />,
+    interview: <Terminal className="w-4 h-4" />
+  };
+
+  return (
+    <a 
+      href={resource.url} 
+      target="_blank" 
+      rel="noopener noreferrer"
+      className="group flex items-center gap-4 p-4 rounded-xl bg-zinc-900/50 border border-zinc-800 hover:bg-zinc-800 hover:border-indigo-500/30 transition-all duration-300"
+    >
+      <div className={`p-2 rounded-lg ${resource.type === 'quest' ? 'bg-amber-500/10 text-amber-500' : 'bg-indigo-500/10 text-indigo-400'}`}>
+        {icons[resource.type] || <BookOpen className="w-4 h-4" />}
+      </div>
+      <div className="flex-1">
+        <h4 className="text-sm font-bold text-zinc-200 group-hover:text-white transition-colors">
+          {resource.title}
+        </h4>
+        <span className="text-[10px] uppercase tracking-wider text-zinc-600 font-bold">
+          {resource.type.replace('-', ' ')}
+        </span>
+      </div>
+      <div className="opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all text-indigo-400">
+        →
+      </div>
+    </a>
+  );
+};
 
 const TechnologyDetail = () => {
   const { slug } = useParams();
@@ -13,54 +51,37 @@ const TechnologyDetail = () => {
   const [technology, setTechnology] = useState(null);
   const [userProgress, setUserProgress] = useState({ steps: [] });
   const [loading, setLoading] = useState(true);
+  const [activeStep, setActiveStep] = useState(0); // Tracks which step is expanded
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        
-        // 1. Fetch Technology (Public Data)
-        // ✅ FIX: Use 'api.get' with relative path
         const techRes = await api.get(`/technologies/${slug}`);
         const tech = techRes.data?.data?.technology;
         
         if (tech) {
           setTechnology(tech);
-
-          // 2. Fetch User Progress (Optional Authentication)
           const token = localStorage.getItem('token');
           if (token) {
             try {
-              // ✅ FIX: Pass '_skipAuthRedirect: true'
-              // This tells api.js: "If this fails, don't redirect to login. Just let me handle it."
-              const userRes = await api.get('/auth/me', {
-                _skipAuthRedirect: true
-              });
-              
+              const userRes = await api.get('/auth/me', { _skipAuthRedirect: true });
               const user = userRes.data?.data?.user;
               const progress = user?.progress?.find(p => {
                 const pTechId = p.technology?._id || p.technology;
                 return pTechId?.toString() === tech._id?.toString();
               });
-              
               if (progress) setUserProgress(progress);
             } catch (authErr) {
-              // Graceful Fallback: If 401, just stay as guest
               if (authErr.response?.status === 401) {
-                console.warn("Token expired. Switching to Guest Mode.");
                 localStorage.removeItem('token');
-                localStorage.removeItem('user');
-                // We do NOT redirect here. The user just sees the page without progress.
               }
             }
           }
         }
       } catch (err) {
-        console.error("Fetch Error:", err);
-        const errorMsg = err.response?.data?.message || "Could not load roadmap data.";
-        // Only show error toast if it wasn't a 401 (api.js handles standard 401s)
         if (err.response?.status !== 401) {
-          toast.error(errorMsg);
+          toast.error("Could not load roadmap.");
         }
       } finally {
         setLoading(false);
@@ -69,23 +90,21 @@ const TechnologyDetail = () => {
     fetchData();
   }, [slug]);
 
-  const handleProgressUpdate = async (stepIndex, status, notes) => {
-    // 1. CLIENT-SIDE CHECK: Are we logged in?
+  const handleStatusUpdate = async (stepIndex, newStatus) => {
     const token = localStorage.getItem('token');
-    
-    if (!token) {
-      toast.error("Please login to track your progress", { icon: '🔒' });
-      // Optional: Redirect to login immediately
-      // navigate('/login'); 
-      return; 
-    }
+    if (!token) return toast.error("Login to track progress");
 
-    // 2. Optimistic UI Update
     const previousProgress = { ...userProgress };
+    
+    // Optimistic Update
     setUserProgress(prev => {
       const newSteps = [...(prev?.steps || [])];
       const idx = newSteps.findIndex(s => s.stepIndex === stepIndex);
-      const updatedStep = { stepIndex, status, notes: notes ?? (newSteps[idx]?.notes || '') };
+      const updatedStep = { 
+        stepIndex, 
+        status: newStatus, 
+        notes: newSteps[idx]?.notes || '' 
+      };
       
       if (idx >= 0) newSteps[idx] = updatedStep;
       else newSteps.push(updatedStep);
@@ -94,104 +113,225 @@ const TechnologyDetail = () => {
     });
 
     try {
-      // 3. Send Request (with skip redirect flag)
       await api.put(`/technologies/${slug}/progress`, 
-        { stepIndex, status, notes },
-        { _skipAuthRedirect: true } // Don't force redirect if token is bad
+        { stepIndex, status: newStatus },
+        { _skipAuthRedirect: true }
       );
-      
-      if (status === 'completed') toast.success("Module Mastered!", { icon: '🚀' });
-
-    } catch (err) {
-      // 4. Revert UI on failure
-      setUserProgress(previousProgress);
-
-      // 5. Handle Specific 401 Error
-      if (err.response?.status === 401) {
-        toast.error("Session expired. Please login again.");
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        // navigate('/login'); // Uncomment if you want to force them to login page
-      } else {
-        toast.error("Sync failed. Changes not saved.");
+      if (newStatus === 'completed') {
+        toast.success("Unit Complete! +50 XP", {
+            style: { background: '#10b981', color: '#fff' },
+            icon: '⚡'
+        });
       }
+    } catch (err) {
+      setUserProgress(previousProgress);
+      toast.error("Sync failed");
     }
   };
+
+  // --- Calculations ---
   const completedCount = userProgress?.steps?.filter(s => s.status === 'completed').length || 0;
   const totalCount = technology?.roadmap?.length || 0;
   const progressPercent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+  const currentXP = completedCount * 150;
 
   if (loading) return (
-    <div className="h-screen bg-zinc-950 flex flex-col items-center justify-center text-indigo-500">
-      <div className="animate-pulse text-2xl font-bold tracking-widest mb-4">DECRYPTING ROADMAP...</div>
-      <div className="w-64 h-1 bg-zinc-800 rounded-full overflow-hidden">
-        <div className="h-full bg-indigo-500 animate-progress"></div>
-      </div>
+    <div className="h-screen bg-[#030712] flex flex-col items-center justify-center">
+      <div className="w-16 h-16 border-4 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin mb-6" />
+      <div className="text-zinc-500 font-mono text-sm tracking-widest animate-pulse">DECODING MATRIX...</div>
     </div>
   );
 
-  if (!technology) return <div className="h-screen bg-zinc-950 flex items-center justify-center text-zinc-500">Technology not found.</div>;
+  if (!technology) return <div className="h-screen bg-[#030712] flex items-center justify-center text-zinc-500">Subject Not Found</div>;
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100 pb-20">
-      <Toaster position="bottom-right" toastOptions={{ style: { background: '#18181b', color: '#fff', border: '1px solid #27272a' } }} />
-      
-      <div className="relative min-h-[45vh] flex items-end pb-16 overflow-hidden border-b border-zinc-800/50">
-        <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/20 to-transparent z-10" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_30%,_#4f46e5_0%,_transparent_30%)] opacity-20" />
-        
-        <div className="container mx-auto px-6 md:px-8 relative z-20">
-          <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-zinc-500 hover:text-white mb-8 transition-all group">
-            <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1" /> Back to Radar
+    <div className="min-h-screen bg-[#030712] text-zinc-100 selection:bg-indigo-500/30">
+      <Toaster position="bottom-center" />
+
+      {/* --- HERO HEADER --- */}
+      <div className="relative pt-32 pb-20 px-6 border-b border-white/5 overflow-hidden">
+        {/* Background Gradients */}
+        <div className="absolute top-0 inset-x-0 h-[500px] bg-[radial-gradient(circle_at_50%_0%,_rgba(79,70,229,0.15),_transparent_70%)] pointer-events-none" />
+        <div className="absolute top-[-100px] right-[-100px] w-[600px] h-[600px] bg-indigo-600/5 rounded-full blur-[100px] animate-pulse-slow" />
+
+        <div className="container mx-auto max-w-6xl relative z-10">
+          <button 
+            onClick={() => navigate(-1)} 
+            className="group flex items-center gap-2 text-xs font-bold text-zinc-500 hover:text-white mb-8 transition-colors"
+          >
+            <div className="p-1 rounded-md bg-white/5 group-hover:bg-indigo-500/20 transition-colors">
+               <ChevronLeft className="w-4 h-4" />
+            </div>
+            <span>RETURN TO RADAR</span>
           </button>
-          <div className="flex flex-wrap gap-3 mb-6">
-            <span className="px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[10px] font-black uppercase tracking-widest">{technology.category}</span>
+
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-8">
+            <div className="space-y-4">
+               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[10px] font-black uppercase tracking-widest">
+                  <Target className="w-3 h-3" />
+                  {technology.sector || 'General'} Protocol
+               </div>
+               <h1 className="text-5xl md:text-7xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-br from-white via-white to-zinc-500">
+                  {technology.name}
+               </h1>
+               <p className="text-zinc-400 max-w-2xl text-lg leading-relaxed">
+                  {technology.description}
+               </p>
+            </div>
+
+            {/* Header Stats */}
+            <div className="flex gap-4">
+                <div className="px-6 py-4 bg-zinc-900/50 border border-white/10 rounded-2xl backdrop-blur-sm">
+                    <div className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider mb-1">Current XP</div>
+                    <div className="text-2xl font-black text-white flex items-center gap-2">
+                        {currentXP.toLocaleString()} <span className="text-amber-500 text-sm">XP</span>
+                    </div>
+                </div>
+                <div className="px-6 py-4 bg-zinc-900/50 border border-white/10 rounded-2xl backdrop-blur-sm">
+                    <div className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider mb-1">Completion</div>
+                    <div className="text-2xl font-black text-indigo-400">
+                        {progressPercent}%
+                    </div>
+                </div>
+            </div>
           </div>
-          <h1 className="text-5xl md:text-7xl font-black tracking-tighter mb-6 text-white">
-            {technology.name}<span className="text-indigo-600">.</span>
-          </h1>
-          <p className="text-zinc-400 max-w-2xl text-lg font-light leading-relaxed line-clamp-3">
-            {technology.description}
-          </p>
         </div>
       </div>
 
-      <main className="container mx-auto px-6 md:px-8 -mt-10 grid grid-cols-1 xl:grid-cols-12 gap-12 relative z-30">
-        <div className="xl:col-span-8 space-y-4">
-          <h2 className="text-xl font-bold flex items-center gap-3 mb-8 text-zinc-100">
-            <Layout className="w-5 h-5 text-indigo-500"/> Project Curriculum
-          </h2>
-          {/* SAFE RENDER: Checks if roadmap exists before mapping */}
-          {technology.roadmap && technology.roadmap.length > 0 ? (
-            technology.roadmap.map((step, idx) => (
-              <RoadmapStep key={idx} step={step} index={idx} userProgress={userProgress} onUpdate={handleProgressUpdate} />
-            ))
-          ) : (
-            <div className="p-10 border border-dashed border-zinc-800 rounded-2xl text-center text-zinc-500">
-              <p className="mb-2 font-bold text-white">Roadmap Initialization Failed</p>
-              <p className="text-sm">The AI could not generate this roadmap. Please check the server console logs.</p>
+      {/* --- MAIN CONTENT GRID --- */}
+      <main className="container mx-auto max-w-6xl px-6 py-12 grid grid-cols-1 lg:grid-cols-12 gap-12">
+        
+        {/* LEFT COLUMN: Progress Timeline (4 Cols) */}
+        <div className="lg:col-span-4 space-y-4">
+            <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-widest px-2 mb-6 flex items-center gap-2">
+                <Layout className="w-4 h-4" /> Learning Nodes
+            </h3>
+            
+            <div className="relative pl-4 border-l border-white/5 space-y-8">
+                {technology.roadmap?.map((step, index) => {
+                    const stepStatus = userProgress?.steps?.find(s => s.stepIndex === index)?.status || 'pending';
+                    const isCompleted = stepStatus === 'completed';
+                    const isActive = activeStep === index;
+                    const isLocked = index > 0 && userProgress?.steps?.find(s => s.stepIndex === index - 1)?.status !== 'completed';
+
+                    return (
+                        <div key={index} className="relative group">
+                            {/* Connector Node */}
+                            <div className={`
+                                absolute -left-[21px] top-1 w-3 h-3 rounded-full border-2 transition-all duration-300 z-10
+                                ${isActive ? 'bg-indigo-500 border-indigo-500 scale-125' : 
+                                  isCompleted ? 'bg-zinc-900 border-indigo-500' : 'bg-zinc-900 border-zinc-700'}
+                            `} />
+                            
+                            <button 
+                                onClick={() => !isLocked && setActiveStep(index)}
+                                disabled={isLocked}
+                                className={`
+                                    w-full text-left p-4 rounded-xl border transition-all duration-300 relative overflow-hidden
+                                    ${isActive 
+                                        ? 'bg-indigo-600/10 border-indigo-500/50 shadow-[0_0_30px_rgba(79,70,229,0.1)]' 
+                                        : 'bg-zinc-900/30 border-white/5 hover:border-white/10 hover:bg-zinc-800/50'}
+                                    ${isLocked ? 'opacity-50 cursor-not-allowed grayscale' : ''}
+                                `}
+                            >
+                                <div className="flex justify-between items-start">
+                                    <div>
+                                        <div className="text-[10px] font-mono text-zinc-500 mb-1">NODE_{String(index + 1).padStart(2, '0')}</div>
+                                        <h4 className={`font-bold text-sm ${isActive ? 'text-white' : 'text-zinc-400'}`}>
+                                            {step.title}
+                                        </h4>
+                                    </div>
+                                    {isCompleted ? <CheckCircle2 className="w-4 h-4 text-emerald-500" /> : 
+                                     isLocked ? <Lock className="w-4 h-4 text-zinc-600" /> :
+                                     <div className="w-4 h-4 rounded-full border border-zinc-600" />
+                                    }
+                                </div>
+                            </button>
+                        </div>
+                    );
+                })}
             </div>
-          )}
         </div>
 
-        <aside className="xl:col-span-4">
-          <div className="lg:sticky lg:top-8 bg-zinc-900 border border-zinc-800 rounded-[2rem] p-8 shadow-2xl shadow-indigo-500/5">
-            <div className="flex justify-between items-center mb-8">
-              <h3 className="font-bold text-lg text-white">Evolution Progress</h3>
-              <Target className="w-5 h-5 text-indigo-500" />
-            </div>
-            <div className="relative h-3 bg-zinc-800 rounded-full mb-4 overflow-hidden">
-              <div className="absolute inset-y-0 left-0 bg-indigo-500 transition-all duration-1000" style={{ width: `${progressPercent}%` }} />
-            </div>
-            <div className="flex justify-between text-xs mb-10 text-zinc-500 font-bold uppercase tracking-widest">
-              <span>{progressPercent}% Complete</span>
-              <span className="text-indigo-400">{completedCount}/{totalCount} Modules</span>
-            </div>
-            <button className="w-full bg-zinc-100 text-zinc-950 py-4 rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:bg-white hover:scale-[1.02] transition-all active:scale-[0.98]">
-              {progressPercent === 100 ? 'Claim Certificate' : 'Continue Journey'}
-            </button>
-          </div>
-        </aside>
+        {/* RIGHT COLUMN: Active Detail View (8 Cols) */}
+        <div className="lg:col-span-8">
+            <AnimatePresence mode='wait'>
+                {technology.roadmap && technology.roadmap[activeStep] && (
+                    <motion.div
+                        key={activeStep}
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -20 }}
+                        transition={{ duration: 0.3 }}
+                        className="bg-zinc-900/40 border border-white/5 rounded-3xl p-8 md:p-10 backdrop-blur-xl relative overflow-hidden"
+                    >
+                        {/* Background Deco */}
+                        <div className="absolute top-0 right-0 p-40 bg-indigo-500/5 blur-[80px] rounded-full pointer-events-none" />
+
+                        {/* Step Header */}
+                        <div className="relative z-10 mb-8">
+                            <div className="flex items-center gap-3 mb-4">
+                                <span className="px-3 py-1 rounded-lg bg-zinc-800 text-xs font-mono text-zinc-400">
+                                    {technology.roadmap[activeStep].duration || '1h 30m'}
+                                </span>
+                                {userProgress?.steps?.find(s => s.stepIndex === activeStep)?.status === 'completed' && (
+                                    <span className="flex items-center gap-1 text-xs font-bold text-emerald-400">
+                                        <CheckCircle2 className="w-3 h-3" /> COMPLETED
+                                    </span>
+                                )}
+                            </div>
+                            <h2 className="text-3xl font-bold text-white mb-4">{technology.roadmap[activeStep].title}</h2>
+                            <p className="text-zinc-400 leading-relaxed text-lg">
+                                {technology.roadmap[activeStep].description}
+                            </p>
+                        </div>
+
+                        {/* Action Bar */}
+                        <div className="flex items-center justify-between p-4 bg-black/20 rounded-xl border border-white/5 mb-8">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-indigo-500/20 rounded-lg text-indigo-400">
+                                    <Zap className="w-5 h-5" />
+                                </div>
+                                <div>
+                                    <div className="text-xs text-zinc-500 font-bold uppercase">Reward</div>
+                                    <div className="font-bold text-white">150 XP</div>
+                                </div>
+                            </div>
+
+                            {userProgress?.steps?.find(s => s.stepIndex === activeStep)?.status === 'completed' ? (
+                                <button 
+                                    onClick={() => handleStatusUpdate(activeStep, 'pending')}
+                                    className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-bold rounded-lg transition-colors"
+                                >
+                                    MARK AS INCOMPLETE
+                                </button>
+                            ) : (
+                                <button 
+                                    onClick={() => handleStatusUpdate(activeStep, 'completed')}
+                                    className="px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold rounded-xl shadow-[0_0_20px_rgba(79,70,229,0.3)] hover:shadow-[0_0_30px_rgba(79,70,229,0.5)] transition-all active:scale-95 flex items-center gap-2"
+                                >
+                                    COMPLETE MODULE <Trophy className="w-4 h-4" />
+                                </button>
+                            )}
+                        </div>
+
+                        {/* Resources Grid */}
+                        <div className="space-y-6">
+                            <h3 className="text-sm font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-2">
+                                <BookOpen className="w-4 h-4" /> Required Materials
+                            </h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {technology.roadmap[activeStep].resources?.map((res, idx) => (
+                                    <ResourceCard key={idx} resource={res} />
+                                ))}
+                            </div>
+                        </div>
+
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </div>
+
       </main>
     </div>
   );
