@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-
 import { 
   Home, BookOpen, TrendingUp, Heart, User, 
   LogOut, Menu, X, Zap, PlusCircle
@@ -14,22 +13,17 @@ const Navbar = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // 1. Define all possible items
   const allNavItems = [
     { name: 'Dashboard', href: '/dashboard', icon: Home, adminOnly: false },
     { name: 'Technologies', href: '/technologies', icon: BookOpen, adminOnly: false },
     { name: 'Trending', href: '/trending', icon: TrendingUp, adminOnly: false },
     { name: 'Favourites', href: '/favourites', icon: Heart, adminOnly: false },
-    { name: 'Create', href: '/admin', icon: PlusCircle, adminOnly: true }, // Changed href to /admin to match your AdminRoute
+    { name: 'Create', href: '/admin', icon: PlusCircle, adminOnly: true },
     { name: 'Profile', href: '/profile', icon: User, adminOnly: false },
   ];
 
-  // 🔥 2. FILTER ITEMS BASED ON ROLE
-  // This ensures regular users don't even see the "Create" option
   const navItems = allNavItems.filter(item => {
-    if (item.adminOnly) {
-      return user?.role === 'admin';
-    }
+    if (item.adminOnly) return user?.role === 'admin';
     return true;
   });
 
@@ -41,8 +35,8 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="sticky top-0 z-50 border-b border-white/5 bg-zinc-950/80 backdrop-blur-xl">
-      <div className="max-w-[1800px] mx-auto px-4 sm:px-6 lg:px-8">
+    <nav className="sticky top-0 z-50 border-b border-white/5 bg-zinc-950/80 backdrop-blur-xl w-full">
+      <div className="w-full px-6 md:px-8 xl:px-12">
         <div className="flex items-center justify-between h-20">
           
           {/* LOGO */}
@@ -55,12 +49,11 @@ const Navbar = () => {
             </span>
           </Link>
 
-          {/* DESKTOP NAVIGATION (Filtered) */}
-          <div className="hidden md:flex items-center bg-white/5 rounded-full p-1.5 border border-white/5">
+          {/* DESKTOP NAV - Visible on XL (1280px) and up */}
+          <div className="hidden xl:flex items-center bg-white/5 rounded-full p-1.5 border border-white/5">
             {navItems.map((item) => {
               const Icon = item.icon;
               const isActive = isActiveRoute(item.href);
-
               return (
                 <Link
                   key={item.name}
@@ -74,7 +67,6 @@ const Navbar = () => {
                       transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
                     />
                   )}
-                  
                   <div className="relative z-10 flex items-center space-x-2">
                     <Icon className={`w-4 h-4 transition-colors ${isActive ? 'text-blue-400' : 'text-zinc-500 group-hover:text-zinc-300'}`} />
                     <span className={`text-sm font-bold transition-colors ${isActive ? 'text-white' : 'text-zinc-500 group-hover:text-zinc-300'}`}>
@@ -86,7 +78,7 @@ const Navbar = () => {
             })}
           </div>
 
-          {/* RIGHT SIDE (Profile & Logout) */}
+          {/* RIGHT SIDE */}
           <div className="flex items-center space-x-4">
             <div className="hidden md:flex items-center space-x-3 bg-zinc-900 border border-zinc-800 px-4 py-2 rounded-full">
               <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-xs font-bold text-white shadow-inner">
@@ -102,59 +94,36 @@ const Navbar = () => {
               </div>
             </div>
             
-            <button
-              onClick={handleLogout}
-              className="hidden md:flex p-2.5 rounded-xl text-zinc-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"
-              title="Disconnect"
-            >
+            {/* Logout - Hidden on smaller screens */}
+            <button onClick={handleLogout} className="hidden xl:flex p-2.5 rounded-xl text-zinc-500 hover:text-red-400 hover:bg-red-500/10 transition-colors">
               <LogOut className="w-5 h-5" />
             </button>
 
-            <button
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="md:hidden p-2 rounded-xl text-zinc-400 hover:text-white hover:bg-white/10"
+            {/* HAMBURGER BUTTON - Visible below XL */}
+            <button 
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} 
+              className="xl:hidden p-2 rounded-xl text-zinc-400 hover:text-white hover:bg-white/10"
             >
               {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
           </div>
         </div>
 
-        {/* MOBILE MENU DROPDOWN (Filtered) */}
+        {/* MOBILE MENU */}
         <AnimatePresence>
           {isMobileMenuOpen && (
             <motion.div 
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              className="md:hidden overflow-hidden border-t border-white/5 bg-zinc-950"
+              initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
+              className="xl:hidden overflow-hidden border-t border-white/5 bg-zinc-950"
             >
               <div className="py-4 space-y-2">
-                {navItems.map((item) => {
-                  const Icon = item.icon;
-                  const isActive = isActiveRoute(item.href);
-                  return (
-                    <Link
-                      key={item.name}
-                      to={item.href}
-                      onClick={() => setIsMobileMenuOpen(false)}
-                      className={`
-                        flex items-center px-4 py-3 mx-2 rounded-xl text-sm font-medium transition-all
-                        ${isActive 
-                          ? 'bg-blue-600/10 text-white border border-blue-600/20' 
-                          : 'text-zinc-500 hover:bg-white/5 hover:text-zinc-300'}
-                      `}
-                    >
-                      <Icon className={`w-5 h-5 mr-3 ${isActive ? 'text-blue-400' : ''}`} />
-                      {item.name}
-                    </Link>
-                  );
-                })}
-                <button
-                  onClick={handleLogout}
-                  className="w-full flex items-center px-4 py-3 mx-2 rounded-xl text-sm font-medium text-red-400 hover:bg-red-500/10 transition-all"
-                >
-                  <LogOut className="w-5 h-5 mr-3" />
-                  Disconnect Session
+                {navItems.map((item) => (
+                  <Link key={item.name} to={item.href} onClick={() => setIsMobileMenuOpen(false)} className="flex items-center px-4 py-3 mx-2 rounded-xl text-sm font-medium text-zinc-500 hover:bg-white/5 hover:text-white">
+                    <item.icon className="w-5 h-5 mr-3" /> {item.name}
+                  </Link>
+                ))}
+                <button onClick={handleLogout} className="w-full flex items-center px-4 py-3 mx-2 rounded-xl text-sm font-medium text-red-400 hover:bg-red-500/10">
+                  <LogOut className="w-5 h-5 mr-3" /> Disconnect Session
                 </button>
               </div>
             </motion.div>

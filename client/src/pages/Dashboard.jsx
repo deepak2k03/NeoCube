@@ -1,51 +1,38 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { 
-  motion, useMotionTemplate, useMotionValue, useSpring, useTransform 
-} from 'framer-motion';
-import {
-  Trophy, Target, TrendingUp, Flame, Zap, Activity, 
-  ChevronRight, Cpu, Star, ArrowUpRight
-} from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Trophy, Target, TrendingUp, Flame, Zap, Activity, ChevronRight, Cpu, Star, ArrowUpRight, Globe, Command, Layout } from 'lucide-react';
 
-// --- COMPACT 3D TILT CARD ---
-const TiltCard = ({ children, className = "" }) => {
-  const ref = useRef(null);
-  const x = useMotionValue(0);
-  const y = useMotionValue(0);
+const NeoCard = ({ children, className = "", onClick }) => (
+  <div onClick={onClick} className={`relative overflow-hidden rounded-2xl border border-white/5 bg-neutral-900/40 backdrop-blur-sm p-6 transition-all duration-300 group ${onClick ? 'cursor-pointer hover:bg-neutral-800/60 hover:border-white/10 hover:shadow-2xl' : ''} ${className}`}>
+    {children}
+  </div>
+);
 
-  const mouseX = useSpring(x, { stiffness: 500, damping: 100 });
-  const mouseY = useSpring(y, { stiffness: 500, damping: 100 });
+const StatBox = ({ label, value, icon: Icon, color }) => (
+  <NeoCard className="flex flex-col justify-between h-full">
+    <div className="flex items-start justify-between mb-4"><div className={`p-2.5 rounded-lg bg-white/5 ${color}`}><Icon className="w-5 h-5" /></div></div>
+    <div><div className="text-3xl font-bold text-white tracking-tight">{value}</div><div className="text-xs text-neutral-500 font-mono uppercase tracking-wider mt-1">{label}</div></div>
+  </NeoCard>
+);
 
-  function onMouseMove({ currentTarget, clientX, clientY }) {
-    const { left, top, width, height } = currentTarget.getBoundingClientRect();
-    x.set(clientX - left - width / 2);
-    y.set(clientY - top - height / 2);
-  }
+const ProtocolItem = ({ title, level, progress, color, icon: Icon, onClick }) => (
+  <div onClick={onClick} className="group relative p-5 bg-neutral-900/50 hover:bg-neutral-800 border border-white/5 rounded-xl transition-all cursor-pointer overflow-hidden">
+    <div className="flex justify-between items-start mb-4"><div className="w-10 h-10 rounded-lg bg-neutral-950 border border-white/10 flex items-center justify-center text-neutral-400 group-hover:text-white transition-colors"><Icon className="w-5 h-5" /></div><span className="text-[10px] font-mono bg-white/5 px-2 py-1 rounded text-neutral-400 border border-white/5">{level}</span></div>
+    <h3 className="text-base font-bold text-white mb-2 group-hover:text-blue-400 transition-colors">{title}</h3>
+    <div className="flex items-center justify-between text-[10px] text-neutral-500 font-mono mb-2"><span>PROGRESS</span><span>{progress}%</span></div>
+    <div className="w-full bg-neutral-950 rounded-full h-1 overflow-hidden"><div className={`h-full ${color} shadow-[0_0_10px_currentColor]`} style={{ width: `${progress}%` }} /></div>
+  </div>
+);
 
-  return (
-    <motion.div
-      ref={ref}
-      onMouseMove={onMouseMove}
-      onMouseLeave={() => { x.set(0); y.set(0); }}
-      style={{ 
-        rotateX: useTransform(mouseY, [-50, 50], [1.5, -1.5]), // Reduced rotation for cleaner feel
-        rotateY: useTransform(mouseX, [-50, 50], [-1.5, 1.5]), 
-        transformStyle: "preserve-3d" 
-      }}
-      className={`relative group ${className}`}
-    >
-      <div style={{ transform: "translateZ(0px)" }} className="h-full bg-zinc-900/40 backdrop-blur-xl border border-white/10 rounded-2xl overflow-hidden relative shadow-lg group-hover:shadow-blue-500/5 transition-all duration-500">
-        <motion.div
-          style={{ background: useMotionTemplate`radial-gradient(300px circle at ${mouseX}px ${mouseY}px, rgba(59, 130, 246, 0.1), transparent 80%)` }}
-          className="pointer-events-none absolute -inset-px opacity-0 group-hover:opacity-100 transition-opacity duration-500"
-        />
-        <div className="relative z-10 h-full p-5">{children}</div>
-      </div>
-    </motion.div>
-  );
-};
+const SuggestionItem = ({ icon, name, tag }) => (
+  <div className="flex items-center gap-4 p-3 rounded-xl hover:bg-white/5 transition-colors cursor-pointer group">
+    <div className="w-10 h-10 rounded-lg bg-neutral-950 border border-white/10 flex items-center justify-center text-lg">{icon}</div>
+    <div className="flex-1 min-w-0"><div className="text-sm font-bold text-white group-hover:text-blue-400 transition-colors truncate">{name}</div><div className="text-[10px] text-neutral-500 font-mono truncate">{tag}</div></div>
+    <ChevronRight className="w-4 h-4 text-neutral-600 group-hover:text-white transition-colors" />
+  </div>
+);
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -62,247 +49,73 @@ const Dashboard = () => {
   const streak = user?.streak ?? userStats.streak ?? 0;
 
   return (
-    <div className="min-h-screen bg-[#030712] relative overflow-hidden pt-6 pb-20 px-6 font-sans selection:bg-cyan-500/30">
+    <div className="min-h-screen bg-[#030712] text-white pt-6 pb-20 font-sans relative w-full overflow-x-hidden">
       
-      {/* 1. COMPACT AMBIENT BACKGROUND */}
+      {/* BACKGROUND */}
       <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute top-[-10%] left-1/4 w-[600px] h-[600px] bg-blue-600/5 rounded-full blur-[100px] mix-blend-screen animate-pulse-slow" />
-        <div className="absolute bottom-[-10%] right-1/4 w-[500px] h-[500px] bg-purple-600/5 rounded-full blur-[100px] mix-blend-screen" />
+        <div className="absolute top-[-20%] left-1/4 w-[800px] h-[800px] bg-indigo-600/10 rounded-full blur-[150px] animate-pulse-slow" />
         <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:40px_40px] [mask-image:radial-gradient(ellipse_60%_60%_at_50%_50%,black,transparent)]" />
       </div>
 
-      <div className="max-w-[1400px] mx-auto relative z-10">
+      <div className="w-full px-6 md:px-8 xl:px-12 relative z-10 space-y-12">
         
-        {/* 2. COMPACT HERO SECTION */}
-        <motion.div 
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex flex-col md:flex-row items-end justify-between gap-6 mb-10"
-        >
+        {/* HEADER */}
+        <div className="flex flex-col md:flex-row items-start md:items-end justify-between gap-6">
           <div>
-            <div className="flex items-center gap-2 text-cyan-400 mb-2 font-mono text-[10px] tracking-[0.2em] uppercase">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-500"></span>
-              </span>
-              System Online • {today}
-            </div>
-            {/* Reduced text size for better scale */}
-            <h1 className="text-4xl md:text-5xl font-bold text-white tracking-tight leading-tight">
-              {greeting}, <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-blue-200 to-blue-500">
-                {user?.name?.split(' ')[0] || 'Operative'}
-              </span>
-            </h1>
+            <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="flex items-center gap-2 text-indigo-400 mb-3 font-mono text-xs tracking-[0.2em] uppercase">
+              <Zap className="w-4 h-4" /> SYSTEM_ONLINE • {today}
+            </motion.div>
+            <motion.h1 initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="text-5xl font-black text-white leading-tight">
+              {greeting}, <br /><span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400">{user?.name?.split(' ')[0] || 'Operative'}</span>
+            </motion.h1>
           </div>
-
-          {/* Compact Streak Counter */}
-          <TiltCard className="w-full md:w-auto !p-0">
-            <div className="flex items-center gap-4 pr-2">
-              <div className="w-12 h-12 bg-zinc-900 rounded-xl flex items-center justify-center border border-white/10 text-orange-500 shadow-inner">
-                <Flame className={`w-6 h-6 ${streak > 0 ? 'fill-orange-500 animate-bounce' : ''}`} />
-              </div>
-              <div>
-                <div className="text-3xl font-black text-white leading-none tracking-tight">{streak}</div>
-                <div className="text-[10px] font-bold text-orange-400 uppercase tracking-wider mt-0.5">Day Streak</div>
-              </div>
-            </div>
-          </TiltCard>
-        </motion.div>
-
-        {/* 3. DENSE STATS GRID */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          <StatBox 
-            label="Active Modules" 
-            value={userStats.inProgressTechnologies ?? 3} 
-            icon={Cpu} 
-            color="text-cyan-400"
-            gradient="from-cyan-500/20 to-blue-500/5"
-          />
-          <StatBox 
-            label="Nodes Cleared" 
-            value={userStats.completedSteps ?? 24} 
-            icon={Target} 
-            color="text-emerald-400"
-            gradient="from-emerald-500/20 to-teal-500/5"
-          />
-          <StatBox 
-            label="Global Rank" 
-            value="#842" 
-            icon={Trophy} 
-            color="text-yellow-400"
-            gradient="from-yellow-500/20 to-orange-500/5"
-          />
-          <StatBox 
-            label="System Sync" 
-            value={`${userStats.overallProgress ?? 68}%`} 
-            icon={Activity} 
-            color="text-purple-400"
-            gradient="from-purple-500/20 to-pink-500/5"
-          />
+          <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.2 }} className="flex items-center gap-4 bg-zinc-900/50 border border-white/5 p-2 pr-6 rounded-full backdrop-blur-md">
+            <div className="w-12 h-12 bg-zinc-800 rounded-full flex items-center justify-center border border-white/5 text-orange-500"><Flame className={`w-6 h-6 ${streak > 0 ? 'fill-orange-500 animate-bounce' : ''}`} /></div>
+            <div><div className="text-2xl font-bold text-white leading-none">{streak}</div><div className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Day Streak</div></div>
+          </motion.div>
         </div>
 
-        {/* 4. MAIN CONTENT (9 cols / 3 cols ratio) */}
-        <div className="grid lg:grid-cols-12 gap-6 h-full">
+        {/* STATS */}
+        {/* Responsive: 1 col (mobile) -> 4 col (desktop xl) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+          <StatBox label="Active Modules" value={userStats.inProgressTechnologies ?? 3} icon={Cpu} color="text-blue-400" />
+          <StatBox label="Nodes Cleared" value={userStats.completedSteps ?? 24} icon={Target} color="text-emerald-400" />
+          <StatBox label="Global Rank" value="#842" icon={Trophy} color="text-yellow-400" />
+          <StatBox label="System Sync" value={`${userStats.overallProgress ?? 68}%`} icon={Activity} color="text-purple-400" />
+        </div>
+
+        {/* MAIN LAYOUT */}
+        {/* grid-cols-1 (Mobile/Tablet) -> xl:grid-cols-4 (Desktop) */}
+        <div className="grid grid-cols-1 xl:grid-cols-4 gap-6 xl:gap-8">
           
-          {/* PRIMARY COLUMN (9 cols) */}
-          <div className="lg:col-span-9 space-y-6">
-            
-            {/* Active Learning (Glass Panel) */}
-            <div className="relative group">
-              <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl opacity-20 blur group-hover:opacity-40 transition duration-1000" />
-              <div className="relative bg-[#0a0a0c] rounded-2xl border border-white/10 p-6">
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-xl font-bold text-white flex items-center gap-3">
-                    <Zap className="w-5 h-5 text-yellow-400 fill-yellow-400" /> 
-                    Active Protocols
-                  </h2>
-                  <button 
-                    onClick={() => navigate('/technologies')}
-                    className="text-xs font-bold text-zinc-400 hover:text-white transition-colors flex items-center gap-1 group/btn"
-                  >
-                    VIEW RADAR <ArrowUpRight className="w-3 h-3 group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5 transition-transform" />
-                  </button>
-                </div>
-
-                <div className="grid md:grid-cols-2 gap-4">
-                  <ProtocolCard 
-                    title="React.js" 
-                    level="LVL 4" 
-                    progress={68} 
-                    color="bg-blue-500" 
-                    icon="⚛️"
-                    onClick={() => navigate('/technologies/reactjs')}
-                  />
-                  <ProtocolCard 
-                    title="Node.js" 
-                    level="LVL 2" 
-                    progress={45} 
-                    color="bg-green-500" 
-                    icon="🟢"
-                    onClick={() => navigate('/technologies/nodejs')}
-                  />
-                </div>
+          <div className="xl:col-span-3 space-y-6">
+            <NeoCard className="p-8">
+              <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
+                <div><h2 className="text-2xl font-bold text-white flex items-center gap-3"><Zap className="w-6 h-6 text-yellow-400 fill-yellow-400" /> Active Protocols</h2><p className="text-zinc-400 text-sm mt-1">Resume where you left off.</p></div>
+                <button onClick={() => navigate('/technologies')} className="px-4 py-2 rounded-full bg-white/5 hover:bg-white/10 text-xs font-bold text-white border border-white/10 transition-colors flex items-center gap-2">VIEW RADAR <ArrowUpRight className="w-3 h-3" /></button>
               </div>
-            </div>
-
-            {/* Activity Chart (Compact) */}
-            <TiltCard>
-              <div className="flex items-center gap-3 mb-6">
-                <div className="p-1.5 bg-pink-500/10 rounded-lg">
-                  <TrendingUp className="w-4 h-4 text-pink-500" />
-                </div>
-                <h2 className="text-lg font-bold text-white">Neural Activity</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <ProtocolItem title="React.js Architecture" level="Level 4" progress={68} color="bg-blue-500" icon={Layout} onClick={() => navigate('/technologies/reactjs')} />
+                <ProtocolItem title="Node.js Scalability" level="Level 2" progress={45} color="bg-emerald-500" icon={Globe} onClick={() => navigate('/technologies/nodejs')} />
               </div>
-              
-              <div className="flex items-end justify-between h-32 gap-3 px-2">
-                {[35, 60, 25, 80, 55, 90, 45].map((h, i) => (
-                  <div key={i} className="w-full relative group">
-                    <motion.div 
-                      initial={{ height: 0 }}
-                      animate={{ height: `${h}%` }}
-                      transition={{ duration: 1.2, delay: i * 0.1 }}
-                      className="w-full bg-zinc-800 rounded-t-[2px] group-hover:bg-gradient-to-t group-hover:from-blue-600 group-hover:to-cyan-400 transition-all duration-300"
-                    />
-                  </div>
-                ))}
+            </NeoCard>
+            <NeoCard className="p-8">
+              <div className="flex items-center gap-3 mb-8"><div className="p-2 bg-pink-500/10 rounded-lg"><TrendingUp className="w-5 h-5 text-pink-500" /></div><div><h2 className="text-lg font-bold text-white">Neural Activity</h2><p className="text-zinc-500 text-xs">Commit frequency over 7 days</p></div></div>
+              <div className="flex items-end justify-between h-40 gap-2 sm:gap-4 px-2">
+                {[35, 60, 25, 80, 55, 90, 45].map((h, i) => (<div key={i} className="w-full relative group"><div className="w-full bg-zinc-800 rounded-t-sm group-hover:bg-blue-500 transition-all duration-500" style={{ height: `${h}%` }} /></div>))}
               </div>
-              <div className="flex justify-between mt-3 text-[10px] font-bold text-zinc-600 uppercase tracking-widest">
-                <span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span>
-              </div>
-            </TiltCard>
+              <div className="flex justify-between mt-4 text-[10px] font-mono text-zinc-600 uppercase"><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span></div>
+            </NeoCard>
           </div>
 
-          {/* SIDEBAR COLUMN (3 cols) */}
-          <div className="lg:col-span-3 space-y-6">
-            
-            {/* Suggested Ops */}
-            <div className="bg-zinc-900/40 border border-white/5 rounded-2xl p-5 backdrop-blur-md">
-              <h3 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-4">Recommended</h3>
-              <div className="space-y-3">
-                <SuggestionItem icon="🐍" name="Python" tag="Data Science" />
-                <SuggestionItem icon="🐳" name="Docker" tag="DevOps" />
-                <SuggestionItem icon="☁️" name="AWS" tag="Cloud Arch" />
-              </div>
-            </div>
-
-            {/* Premium Promo (Smaller) */}
-            <div className="relative rounded-2xl p-6 overflow-hidden group cursor-pointer border border-white/5">
-              <div className="absolute inset-0 bg-gradient-to-br from-indigo-900/50 to-purple-900/50 transition-transform duration-500 group-hover:scale-105" />
-              <div className="relative z-10">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-8 h-8 bg-indigo-500/20 rounded-lg flex items-center justify-center border border-indigo-500/30">
-                    <Star className="w-4 h-4 text-indigo-300 fill-indigo-300" />
-                  </div>
-                  <h3 className="text-sm font-bold text-white">Pro Access</h3>
-                </div>
-                <p className="text-indigo-200/70 text-xs mb-4 leading-relaxed">Unlock Layer 2 protocols.</p>
-                <button className="w-full py-2 bg-white text-black text-xs font-bold rounded-lg hover:bg-indigo-50 transition-colors">
-                  Upgrade
-                </button>
-              </div>
-            </div>
-
+          <div className="xl:col-span-1 space-y-6">
+            <NeoCard><h3 className="text-xs font-mono text-zinc-500 uppercase tracking-widest mb-6 flex items-center gap-2"><Command className="w-3 h-3" /> Recommended</h3><div className="space-y-2"><SuggestionItem icon="🐍" name="Python" tag="Data Science" /><SuggestionItem icon="🐳" name="Docker" tag="DevOps" /><SuggestionItem icon="☁️" name="AWS" tag="Cloud Architecture" /></div></NeoCard>
+            <div className="relative overflow-hidden rounded-2xl p-8 border border-white/10 group cursor-pointer bg-zinc-900/40"><div className="absolute inset-0 bg-gradient-to-br from-indigo-600/20 to-purple-600/20 group-hover:opacity-100 transition-opacity" /><div className="relative z-10"><div className="w-10 h-10 bg-indigo-500/20 rounded-xl flex items-center justify-center border border-indigo-500/30 mb-4 text-indigo-400"><Star className="w-5 h-5 fill-indigo-400" /></div><h3 className="text-lg font-bold text-white mb-2">Upgrade to Pro</h3><p className="text-zinc-400 text-sm mb-6 leading-relaxed">Unlock Layer 2 protocols and access advanced architect certs.</p><button className="w-full py-3 bg-white text-black text-sm font-bold rounded-lg hover:bg-neutral-200 transition-colors">Upgrade Now</button></div></div>
           </div>
         </div>
-
       </div>
     </div>
   );
 };
-
-// --- COMPACT SUB-COMPONENTS ---
-
-const StatBox = ({ label, value, icon: Icon, color, gradient }) => (
-  <TiltCard className="!p-0">
-    <div className={`absolute top-0 right-0 p-16 rounded-full blur-[40px] bg-gradient-to-br ${gradient} opacity-20 pointer-events-none`} />
-    <div className="relative z-10">
-      <div className={`w-8 h-8 rounded-lg bg-zinc-950 border border-white/10 flex items-center justify-center mb-3 ${color}`}>
-        <Icon className="w-4 h-4" />
-      </div>
-      <div className="text-2xl font-black text-white tracking-tight mb-0.5">{value}</div>
-      <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">{label}</div>
-    </div>
-  </TiltCard>
-);
-
-const ProtocolCard = ({ title, level, progress, color, icon, onClick }) => (
-  <div 
-    onClick={onClick}
-    className="group relative p-4 bg-zinc-900/50 hover:bg-zinc-800/50 border border-white/5 rounded-xl transition-all cursor-pointer overflow-hidden"
-  >
-    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
-    <div className="flex justify-between items-start mb-3">
-      <div className="w-8 h-8 rounded-lg bg-zinc-950 border border-white/10 flex items-center justify-center text-lg shadow-inner">
-        {icon}
-      </div>
-      <span className="text-[10px] font-bold bg-white/5 px-1.5 py-0.5 rounded text-zinc-400 border border-white/5">
-        {level}
-      </span>
-    </div>
-    <h3 className="text-sm font-bold text-white mb-1 group-hover:text-blue-400 transition-colors">{title}</h3>
-    <div className="w-full bg-zinc-950 rounded-full h-1 mt-3 overflow-hidden">
-      <motion.div 
-        initial={{ width: 0 }}
-        whileInView={{ width: `${progress}%` }}
-        transition={{ duration: 1, delay: 0.2 }}
-        className={`h-full ${color} shadow-[0_0_8px_currentColor]`}
-      />
-    </div>
-  </div>
-);
-
-const SuggestionItem = ({ icon, name, tag }) => (
-  <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-white/5 transition-colors cursor-pointer group">
-    <div className="w-8 h-8 rounded-lg bg-zinc-950 border border-white/10 flex items-center justify-center group-hover:scale-105 transition-transform text-sm">
-      {icon}
-    </div>
-    <div className="flex-1 min-w-0">
-      <div className="text-xs font-bold text-white group-hover:text-cyan-400 transition-colors truncate">{name}</div>
-      <div className="text-[10px] text-zinc-500 truncate">{tag}</div>
-    </div>
-    <ChevronRight className="w-3 h-3 text-zinc-600 group-hover:text-white" />
-  </div>
-);
 
 export default Dashboard;

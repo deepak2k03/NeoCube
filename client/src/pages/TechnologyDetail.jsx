@@ -156,8 +156,8 @@ const TechnologyDetail = () => {
         </div>
       </div>
 
-      <main className="container mx-auto px-6 md:px-8 -mt-10 grid grid-cols-1 lg:grid-cols-12 gap-12 relative z-30">
-        <div className="lg:col-span-8 space-y-4">
+      <main className="container mx-auto px-6 md:px-8 -mt-10 grid grid-cols-1 xl:grid-cols-12 gap-12 relative z-30">
+        <div className="xl:col-span-8 space-y-4">
           <h2 className="text-xl font-bold flex items-center gap-3 mb-8 text-zinc-100">
             <Layout className="w-5 h-5 text-indigo-500"/> Project Curriculum
           </h2>
@@ -174,7 +174,7 @@ const TechnologyDetail = () => {
           )}
         </div>
 
-        <aside className="lg:col-span-4">
+        <aside className="xl:col-span-4">
           <div className="lg:sticky lg:top-8 bg-zinc-900 border border-zinc-800 rounded-[2rem] p-8 shadow-2xl shadow-indigo-500/5">
             <div className="flex justify-between items-center mb-8">
               <h3 className="font-bold text-lg text-white">Evolution Progress</h3>
